@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>47都道府県 特色マップ</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+h1 {
+  text-align: center;
+  padding: 10px;
+  font-size: 16px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  letter-spacing: 2px;
+  color: #79c0ff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+#quiz-btn {
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+#quiz-btn:hover { background: #2ea043; }
+
+/* ===== レイアウト ===== */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+#map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+svg { width: 100%; height: 100%; }
+
+/* ===== 地図スタイル ===== */
+.prefecture {
+  stroke: #0d1117;
+  stroke-width: 0.8;
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+.pref-label {
+  font-size: 7px;
+  fill: rgba(255,255,255,0.85);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  font-weight: bold;
+}
+
+/* ===== 情報パネル ===== */
+#panel {
+  width: 320px;
+  background: #161b22;
+  border-left: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+#panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #30363d;
+  background: #1c2128;
+}
+#pref-name { font-size: 22px; font-weight: bold; color: #79c0ff; margin-bottom: 2px; }
+#pref-region { font-size: 11px; color: #8b949e; }
+#panel-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+#hint {
+  padding: 20px;
+  text-align: center;
+  color: #484f58;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.info-card {
+  background: #1c2128;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.info-card-title {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.info-card-icon { font-size: 14px; }
+.info-card-content {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #c9d1d9;
+}
+ruby { ruby-align: center; }
+rt { font-size: 0.6em; color: #8b949e; }
+.ranking .info-card-title  { color: #ffd700; }
+.world   .info-card-title  { color: #56d6f6; }
+.agriculture .info-card-title { color: #3fb950; }
+.industry .info-card-title { color: #f0883e; }
+.history  .info-card-title { color: #d2a8ff; }
+.celebrity .info-card-title { color: #ffa657; }
+
+/* ===== ツールチップ ===== */
+#tooltip {
+  position: absolute;
+  background: #1c2128;
+  border: 1px solid #388bfd;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #c9d1d9;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* ===== 凡例 ===== */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 6px 12px;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; color: #8b949e; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ===== クイズオーバーレイ ===== */
+#quiz-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+#quiz-overlay.active { display: flex; }
+#quiz-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  padding: 20px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  position: relative;
+}
+#quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+#quiz-stats { display: flex; flex-direction: column; gap: 3px; }
+#quiz-score-line { font-size: 13px; color: #8b949e; }
+#quiz-score-num  { color: #ffd700; font-weight: bold; font-size: 16px; }
+#quiz-high-line  { font-size: 11px; color: #484f58; }
+#quiz-high-num   { color: #ffa657; font-weight: bold; }
+#quiz-streak-line {
+  font-size: 13px;
+  font-weight: bold;
+  min-height: 19px;
+  transition: all 0.3s;
+}
+#quiz-close {
+  background: none;
+  border: 1px solid #30363d;
+  color: #8b949e;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+#quiz-close:hover { border-color: #f85149; color: #f85149; }
+/* タイマーバー */
+#quiz-timer-wrap {
+  height: 5px;
+  background: #21262d;
+  border-radius: 3px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+#quiz-timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg,#3fb950,#58a6ff);
+  border-radius: 3px;
+}
+#quiz-timer-bar.warn   { background: linear-gradient(90deg,#ffa657,#f0883e); }
+#quiz-timer-bar.danger { background: #f85149; }
+/* メタ行 */
+#quiz-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+#quiz-type-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #1c2128;
+  border: 1px solid #30363d;
+  color: #8b949e;
+}
+#quiz-cat-badge {
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+#quiz-qnum { font-size: 11px; color: #484f58; margin-left: auto; }
+/* 問題文 */
+#quiz-question {
+  font-size: 14px;
+  color: #e6edf3;
+  line-height: 1.75;
+  background: #1c2128;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-left: 3px solid #388bfd;
+}
+#quiz-question .pref-highlight { color: #79c0ff; font-weight: bold; font-size: 18px; }
+#quiz-question .info-highlight { color: #c9d1d9; display: block; margin-top: 6px; font-size: 13px; }
+/* 選択肢グリッド */
+#quiz-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+#quiz-choices[data-type="B"] { grid-template-columns: 1fr; }
+.quiz-choice {
+  background: #1c2128;
+  border: 2px solid #21262d;
+  color: #c9d1d9;
+  border-radius: 8px;
+  padding: 12px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: all 0.15s;
+  text-align: center;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+}
+#quiz-choices[data-type="B"] .quiz-choice {
+  text-align: left;
+  font-size: 12px;
+  font-weight: normal;
+  justify-content: flex-start;
+  padding: 10px 12px;
+}
+.quiz-choice:hover:not(:disabled) { border-color: #388bfd; background: #1a2233; transform: translateY(-1px); }
+.quiz-choice.correct { background: #1a3a1a; border-color: #3fb950; color: #3fb950; animation: correctPop 0.3s ease; }
+.quiz-choice.wrong   { background: #3a1a1a; border-color: #f85149; color: #f85149; animation: wrongShake 0.3s ease; }
+.quiz-choice:disabled { cursor: default; transform: none; }
+@keyframes correctPop  { 0%{transform:scale(1)} 50%{transform:scale(1.04)} 100%{transform:scale(1)} }
+@keyframes wrongShake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+/* 結果 */
+#quiz-result {
+  text-align: center;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: none;
+  line-height: 1.6;
+}
+#quiz-result.show { display: block; }
+#quiz-result.ok   { background: #1a3a1a; color: #3fb950; }
+#quiz-result.ng   { background: #3a1a1a; color: #f85149; }
+#quiz-result .bonus-text { font-size: 12px; color: #ffd700; margin-top: 2px; }
+/* スコアポップアップ */
+.score-pop {
+  position: absolute;
+  right: 20px;
+  top: 16px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffd700;
+  pointer-events: none;
+  animation: floatUp 1.2s ease-out forwards;
+  z-index: 20;
+}
+@keyframes floatUp {
+  0%   { opacity:1; transform:translateY(0) scale(1); }
+  30%  { opacity:1; transform:translateY(-10px) scale(1.15); }
+  100% { opacity:0; transform:translateY(-52px) scale(0.8); }
+}
+/* 次の問題ボタン */
+#quiz-next {
+  width: 100%;
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  display: none;
+  transition: background 0.2s, transform 0.1s;
+}
+#quiz-next.show { display: block; }
+#quiz-next:hover  { background: #2ea043; transform: translateY(-1px); }
+#quiz-next:active { transform: translateY(0); }
+#quiz-auto-next { text-align:center; font-size:12px; color:#484f58; margin-top:6px; display:none; }
+#quiz-auto-next.show { display:block; }
+
+/* ===== モバイル対応 ===== */
+@media (max-width: 700px) {
+  #main { flex-direction: column; }
+  #panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #30363d;
+    max-height: 45dvh;
+  }
+  #panel-body { padding: 10px 12px; }
+  #panel-header { padding: 10px 12px; }
+  #pref-name { font-size: 18px; }
+  .info-card { padding: 10px; margin-bottom: 8px; }
+  .info-card-content { font-size: 11px; }
+  .legend { gap: 4px 10px; font-size: 10px; padding: 4px 8px; }
+  h1 { font-size: 13px; padding: 8px; }
+  #quiz-btn { font-size: 11px; padding: 5px 10px; }
+  #quiz-choices { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quiz-choice { font-size: 12px; padding: 10px 6px; }
+  #quiz-box { padding: 16px; }
+}
+@media (max-width: 400px) {
+  .pref-label { font-size: 5.5px; }
+}
+</style>
+</head>
+<body>
+<h1>
+  <span>47都道府県 特色マップ</span>
+  <button id="quiz-btn">🎯 クイズ</button>
+</h1>
+<div id="main">
+  <div id="map-container">
+    <div id="tooltip"></div>
+    <svg id="map"></svg>
+  </div>
+  <div id="panel">
+    <div id="panel-header">
+      <div id="pref-name">都道府県を選択</div>
+      <div id="pref-region">地図をタップしてください</div>
+    </div>
+    <div id="panel-body">
+      <div id="hint">🗾 都道府県をタップすると<br>詳細情報が表示されます</div>
+      <div id="info-cards" style="display:none;">
+        <div class="info-card ranking">
+          <div class="info-card-title"><span class="info-card-icon">🏆</span>全国ランキング</div>
+          <div class="info-card-content" id="info-ranking"></div>
+        </div>
+        <div class="info-card world">
+          <div class="info-card-title"><span class="info-card-icon">🌍</span>世界的に有名なこと</div>
+          <div class="info-card-content" id="info-world"></div>
+        </div>
+        <div class="info-card agriculture">
+          <div class="info-card-title"><span class="info-card-icon">🌾</span>農業特産</div>
+          <div class="info-card-content" id="info-agriculture"></div>
+        </div>
+        <div class="info-card industry">
+          <div class="info-card-title"><span class="info-card-icon">🏭</span>工業・産業</div>
+          <div class="info-card-content" id="info-industry"></div>
+        </div>
+        <div class="info-card history">
+          <div class="info-card-title"><span class="info-card-icon">🏯</span>歴史</div>
+          <div class="info-card-content" id="info-history"></div>
+        </div>
+        <div class="info-card celebrity">
+          <div class="info-card-title"><span class="info-card-icon">👤</span>著名人</div>
+          <div class="info-card-content" id="info-celebrity"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend" id="legend"></div>
+
+<!-- クイズオーバーレイ -->
+<div id="quiz-overlay">
+  <div id="quiz-box">
+    <div id="quiz-header">
+      <div id="quiz-stats">
+        <div id="quiz-score-line">スコア: <span id="quiz-score-num">0</span>pt</div>
+        <div id="quiz-high-line">ハイスコア: <span id="quiz-high-num">0</span>pt</div>
+        <div id="quiz-streak-line"></div>
+      </div>
+      <button id="quiz-close">✕ 終了</button>
+    </div>
+    <div id="quiz-timer-wrap"><div id="quiz-timer-bar"></div></div>
+    <div id="quiz-meta">
+      <span id="quiz-type-badge"></span>
+      <span id="quiz-cat-badge"></span>
+      <span id="quiz-qnum"></span>
+    </div>
+    <div id="quiz-question"></div>
+    <div id="quiz-choices"></div>
+    <div id="quiz-result"></div>
+    <button id="quiz-next">次の問題 →</button>
+    <div id="quiz-auto-next"></div>
+  </div>
+</div>
+
+<script>
+// ===== データ =====
+// celebrity/historyフィールドは innerHTML で設定するため、難読語に <ruby> タグを付与
+const R = (kanji, kana) => `<ruby>${kanji}<rt>${kana}</rt></ruby>`;
+
+const prefectureData = {
+  "北海道": {
+    region: "北海道・東北",
+    ranking: "農業産出額 全国1位（約1兆1,700億円）／じゃがいも生産量 全国1位（約178万t・全国の約80%）／牛乳生産量 全国1位（全国の約54%）",
+    worldFamous: "富良野のラベンダー畑と雄大な自然景観は世界中の旅行者を魅了し、年間外国人観光客は300万人超",
+    agriculture: "じゃがいも・玉ねぎ・小麦・乳製品・昆布",
+    industry: "食品加工・木材・観光業・漁業",
+    history: "明治時代に開拓使が設置され、屯田兵による開拓が進む。アイヌ民族の文化が根付く北の大地。",
+    celebrity: `松浦武四郎（${R("北海道","ほっかいどう")}命名者）`
+  },
+  "青森県": {
+    region: "北海道・東北",
+    ranking: "りんご生産量 全国1位（約45万t・全国の約59%）／ニンニク生産量 全国1位（全国の約70%）",
+    worldFamous: `${R("三内丸山","さんないまるやま")}遺跡（2021年世界遺産登録）は縄文文化を世界に伝える日本最大級の縄文集落跡。ねぶた祭は世界的な夏祭りとして海外メディアに多数取り上げられる`,
+    agriculture: "りんご（全国1位・全体の約6割）・ニンニク・長芋",
+    industry: "食品加工・観光・津軽塗",
+    history: `縄文時代の${R("三内丸山","さんないまるやま")}遺跡（世界遺産）。津軽と南部の二文化圏。ねぶた祭で有名。`,
+    celebrity: "太宰治（作家・『人間失格』）"
+  },
+  "岩手県": {
+    region: "北海道・東北",
+    ranking: "面積 全国2位（約15,275km²）／わかめ漁獲量 全国1位／南部鉄器は海外100か国以上に輸出",
+    worldFamous: `${R("平泉","ひらいずみ")}・${R("中尊寺金色堂","ちゅうそんじこんじきどう")}（2011年世界遺産登録）は12世紀の${R("奥州藤原氏","おうしゅうふじわらし")}の黄金文化を今に伝え、世界中の仏教美術ファンが訪れる`,
+    agriculture: "南部牛・わかめ・短角牛・雑穀",
+    industry: "南部鉄器（世界的ブランド）・半導体・自動車部品",
+    history: `12世紀の${R("平泉","ひらいずみ")}に${R("奥州藤原氏","おうしゅうふじわらし")}が栄え、${R("中尊寺金色堂","ちゅうそんじこんじきどう")}（世界遺産）を建立。`,
+    celebrity: `${R("宮沢賢治","みやざわけんじ")}（詩人・童話作家）`
+  },
+  "宮城県": {
+    region: "北海道・東北",
+    ranking: "牡蠣生産量 全国2位（約2万t）／笹かまぼこ生産量 全国1位／仙台は東北最大の都市（人口約109万人）",
+    worldFamous: `松島は日本三景の一つ。${R("松尾芭蕉","まつおばしょう")}が詠んだ絶景は世界の旅行ガイドに掲載される景勝地`,
+    agriculture: "ひとめぼれ（米）・牡蠣・ずんだ（枝豆）",
+    industry: "造船・水産加工・電子機器",
+    history: `仙台藩62万石の城下町。${R("伊達政宗","だてまさむね")}が整備した東北最大の城下町・仙台。`,
+    celebrity: `${R("伊達政宗","だてまさむね")}（独眼竜・仙台藩初代藩主）`
+  },
+  "秋田県": {
+    region: "北海道・東北",
+    ranking: "あきたこまち作付面積 全国上位／風力発電設備容量 全国上位",
+    worldFamous: `秋田犬（Akita Inu）は世界中で愛される犬種。忠犬ハチ公の物語は欧米でも広く知られる`,
+    agriculture: "あきたこまち（米）・きりたんぽ・比内地鶏",
+    industry: "木材・秋田杉・風力発電",
+    history: `佐竹藩の城下町・久保田。秋田音頭と${R("竿燈","かんとう")}まつりで知られる。`,
+    celebrity: `${R("平田篤胤","ひらたあつたね")}（国学者・神道復古運動）`
+  },
+  "山形県": {
+    region: "北海道・東北",
+    ranking: "さくらんぼ生産量 全国1位（約1.7万t・全国の約75%）／ラ・フランス生産量 全国1位（全国の約80%）",
+    worldFamous: `蔵王の樹氷（スノーモンスター）は世界でも類を見ない自然現象として海外メディアに多数紹介。山形国際ドキュメンタリー映画祭はアジア最大級`,
+    agriculture: "さくらんぼ（全国1位）・ラ・フランス・山形牛",
+    industry: "鋳物・フルーツ加工・繊維",
+    history: `${R("最上義光","もがみよしあき")}が整備した城下町。山形花笠まつり。${R("出羽三山","でわさんざん")}（修験道の聖地）。`,
+    celebrity: `${R("土門拳","どもんけん")}（写真家）`
+  },
+  "福島県": {
+    region: "北海道・東北",
+    ranking: "もも生産量 全国2位（約2.5万t）／日本酒全国新酒鑑評会金賞受賞数 全国最多クラス",
+    worldFamous: "2011年の東京電力福島第一原子力発電所事故は世界史的な原子力災害として国際社会に大きな影響を与え、今なお世界中で語り継がれる",
+    agriculture: "もも（全国2位）・米・トマト・会津産酒",
+    industry: "電気機器・半導体・清酒醸造",
+    history: `会津藩の悲劇（${R("戊辰戦争","ぼしんせんそう")}）。白虎隊の殉死。${R("鶴ヶ城","つるがじょう")}（若松城）。`,
+    celebrity: `${R("野口英世","のぐちひでよ")}（細菌学者・千円札の顔）`
+  },
+  "茨城県": {
+    region: "関東",
+    ranking: "メロン生産量 全国1位（約8万t・全国の約25%）／れんこん生産量 全国1位（約2万t・全国の約40%）",
+    worldFamous: "筑波宇宙センター（JAXA）は世界的な宇宙開発の拠点。国際宇宙ステーション（ISS）への補給機「こうのとり」はここで管制された",
+    agriculture: "メロン（全国1位）・れんこん・納豆（水戸名産）",
+    industry: "日立製作所発祥・電機・化学・筑波研究学園都市",
+    history: `水戸藩・徳川御三家の一つ。水戸黄門（${R("徳川光圀","とくがわみつくに")}）で全国に名を馳せる。`,
+    celebrity: `${R("徳川光圀","とくがわみつくに")}（水戸黄門・水戸藩主）`
+  },
+  "栃木県": {
+    region: "関東",
+    ranking: "いちご生産量 全国1位（約2.5万t・33年連続1位）／にら生産量 全国1位",
+    worldFamous: `${R("日光東照宮","にっこうとうしょうぐう")}（1999年世界遺産登録）は「絢爛豪華な権現造」として世界の建築史に名を刻む。年間外国人観光客は100万人超`,
+    agriculture: "いちご（全国1位・とちおとめ）・かんぴょう",
+    industry: "自動車（ホンダ）・半導体・餃子（宇都宮）",
+    history: `${R("日光東照宮","にっこうとうしょうぐう")}（世界遺産）に${R("徳川家康","とくがわいえやす")}が祀られる。${R("足利学校","あしかががっこう")}（日本最古の学校）。`,
+    celebrity: `${R("足利尊氏","あしかがたかうじ")}（室町幕府初代将軍）`
+  },
+  "群馬県": {
+    region: "関東",
+    ranking: "こんにゃく生産量 全国1位（全国の約90%）／キャベツ生産量 全国1位（約30万t）",
+    worldFamous: `${R("富岡製糸場","とみおかせいしじょう")}（2014年世界遺産登録）は明治日本の近代化・産業革命遺産の象徴として世界に認められた絹産業の聖地`,
+    agriculture: "こんにゃく（全国1位）・キャベツ・下仁田ねぎ",
+    industry: "富岡製糸場（世界遺産・明治の絹産業）・自動車・電機",
+    history: `明治5年創業の${R("富岡製糸場","とみおかせいしじょう")}が近代産業革命を支えた（世界遺産）。草津温泉。`,
+    celebrity: `${R("中曽根康弘","なかそねやすひろ")}（第71代内閣総理大臣）`
+  },
+  "埼玉県": {
+    region: "関東",
+    ranking: "人口 全国5位（約735万人）／盆栽（Bonsai）生産 全国1位（さいたま市大宮）",
+    worldFamous: "盆栽（Bonsai）は「生きた芸術」として欧米・アジアで普及。さいたま市の大宮盆栽村は世界中の盆栽愛好家の聖地として知られる",
+    agriculture: "深谷ねぎ・ほうれん草・小松菜",
+    industry: "自動車・機械・川越（小江戸）の観光産業",
+    history: `川越藩（小江戸）。忍城は「のぼうの城」の舞台。${R("渋沢栄一","しぶさわえいいち")}の出身地。`,
+    celebrity: `${R("渋沢栄一","しぶさわえいいち")}（実業家・新一万円札）`
+  },
+  "千葉県": {
+    region: "関東",
+    ranking: "落花生生産量 全国1位（全国の約8割）／大根生産量 全国1位／成田国際空港 旅客数 国内1位",
+    worldFamous: "東京ディズニーリゾート（浦安市）は年間約3,000万人が来場する世界有数のテーマパーク",
+    agriculture: "落花生（全国1位）・大根・梨（市川・松戸）",
+    industry: "石油化学コンビナート（市原）・成田空港・東京ディズニーリゾート",
+    history: `里見氏の本拠地。江戸時代は幕府直轄地も多い。${R("伊能忠敬","いのうただたか")}が日本全国を測量。`,
+    celebrity: `${R("伊能忠敬","いのうただたか")}（測量家・日本地図作成）`
+  },
+  "東京都": {
+    region: "関東",
+    ranking: "GDP 全国1位（約100兆円）／人口 全国1位（約1,400万人）／ミシュランの星数 世界都市1位（長年継続）",
+    worldFamous: "東京大都市圏の人口は約3,700万人で世界最大の都市圏。ミシュランガイドの星付きレストランの数は世界一を誇る美食の都",
+    agriculture: "小松菜・東京野菜（江戸東京野菜）",
+    industry: "金融・情報通信・出版・印刷（日本最大の経済都市）",
+    history: `1603年に${R("江戸","えど")}幕府が開かれ、明治以降は首都として近代日本の中心地に。`,
+    celebrity: `${R("徳川家康","とくがわいえやす")}（江戸幕府初代将軍）`
+  },
+  "神奈川県": {
+    region: "関東",
+    ranking: "人口 全国2位（約924万人）／横浜港 貿易額 全国上位",
+    worldFamous: `${R("葛飾北斎","かつしかほくさい")}「神奈川沖浪裏」は世界で最も有名な日本美術作品の一つ。モネ・ゴッホらが影響を受けた傑作で、現在も世界中で複製・引用される`,
+    agriculture: "三浦大根・相模湾の魚介",
+    industry: "造船・自動車（日産本社）・鉄鋼・横浜港",
+    history: `1192年${R("源頼朝","みなもとのよりとも")}が鎌倉幕府を開く。1853年ペリー来航（開国）。横浜から近代化始まる。`,
+    celebrity: `${R("源頼朝","みなもとのよりとも")}（鎌倉幕府初代将軍）`
+  },
+  "新潟県": {
+    region: "中部",
+    ranking: "米生産量 全国1〜2位（約67万t）／日本酒蔵数 全国1位（約90蔵）",
+    worldFamous: "コシヒカリは世界30か国以上で栽培されるブランド米の源流。新潟の日本酒（淡麗辛口）は世界のSAKEブームの中核を担う",
+    agriculture: "コシヒカリ（米の最高ブランド）・日本酒・枝豆",
+    industry: "金属加工・燕三条の刃物・洋食器・石油",
+    history: `越後の国。${R("上杉謙信","うえすぎけんしん")}（義）の故郷。日本最大の米どころ。`,
+    celebrity: `${R("田中角栄","たなかかくえい")}（第64・65代内閣総理大臣）`
+  },
+  "富山県": {
+    region: "中部",
+    ranking: "医薬品生産金額 全国3位／ホタルイカ水揚げ量 全国1位",
+    worldFamous: "立山黒部アルペンルートは標高3,000m級の峰々を貫く世界的山岳観光ルート。雪の大谷（高さ最大20m超）は外国人観光客に特に人気",
+    agriculture: "富山湾の鮮魚（ブリ・ホタルイカ）・コシヒカリ",
+    industry: "アルミニウム・製薬・化学（売薬文化）",
+    history: `越中の国。富山の薬売り（配置薬業）で全国に名を馳せる。前田藩の支藩。`,
+    celebrity: `${R("高峰譲吉","たかみねじょうきち")}（アドレナリン発見・タカジアスターゼ）`
+  },
+  "石川県": {
+    region: "中部",
+    ranking: "輪島塗・九谷焼・加賀友禅の3大伝統工芸を有する唯一の県",
+    worldFamous: `金沢21世紀美術館はSANAA設計の世界的建築として注目。金沢市はユネスコ創造都市ネットワーク（工芸）に加盟`,
+    agriculture: "加賀野菜・能登牛・加能がに",
+    industry: `${R("九谷焼","くたにやき")}・${R("輪島塗","わじまぬり")}・繊維・観光（金沢）`,
+    history: `加賀百万石・${R("前田利家","まえだとしいえ")}の城下町・金沢。文化的に栄え「小京都」とも呼ばれる。`,
+    celebrity: `${R("前田利家","まえだとしいえ")}（加賀藩初代藩主）`
+  },
+  "福井県": {
+    region: "中部",
+    ranking: "眼鏡フレーム生産量 国内シェア約95%・世界シェア約20%（鯖江市）／恐竜化石発掘数 全国1位",
+    worldFamous: "鯖江市の眼鏡フレームは「SABAE」ブランドとして世界に流通。世界の眼鏡の約20%が福井製。恐竜博物館も世界三大恐竜博物館の一つ",
+    agriculture: "越前がに・サバ・梅",
+    industry: "眼鏡フレーム（鯖江・世界シェア約20%）・繊維・原発",
+    history: `越前の国。戦国時代の${R("朝倉氏","あさくらし")}遺跡（一乗谷）が有名。${R("永平寺","えいへいじ")}（曹洞宗大本山）。`,
+    celebrity: `${R("杉田玄白","すぎたげんぱく")}（蘭学者・『解体新書』翻訳）`
+  },
+  "山梨県": {
+    region: "中部",
+    ranking: "ぶどう生産量 全国1位（約4.2万t・全国の約24%）／桃生産量 全国1位（約3.7万t・全国の約33%）",
+    worldFamous: "富士山（2013年世界遺産登録）は日本を象徴する世界的アイコン。年間登山者数は約23万人",
+    agriculture: "ぶどう（全国1位）・桃（全国1位）・ワイン",
+    industry: "宝石加工・ワイン醸造・精密機械",
+    history: `甲斐の国。戦国最強と恐れられた${R("武田信玄","たけだしんげん")}の本拠地。富士山の玄関口。`,
+    celebrity: `${R("武田信玄","たけだしんげん")}（甲斐の虎・戦国大名）`
+  },
+  "長野県": {
+    region: "中部",
+    ranking: "レタス生産量 全国1位（約21万t・全国の約34%）／セロリ生産量 全国1位",
+    worldFamous: "1998年長野冬季オリンピック・パラリンピック開催地。善光寺は世界遺産暫定リスト掲載の古刹",
+    agriculture: "りんご・レタス（全国1位）・蕎麦・ワイン",
+    industry: "精密機械・観光（軽井沢・白馬）・電子部品",
+    history: `信濃の国。川中島の戦い（武田vs上杉）。${R("善光寺","ぜんこうじ")}（無宗派の古刹）。${R("真田氏","さなだし")}の本拠地。`,
+    celebrity: `${R("真田幸村","さなだゆきむら")}（真田信繁・大坂夏の陣の英雄）`
+  },
+  "岐阜県": {
+    region: "中部",
+    ranking: "美濃焼出荷額 全国1位（陶磁器全国シェア約50%）／刃物生産量（関市）全国1位",
+    worldFamous: `${R("白川郷","しらかわごう")}合掌造り集落（1995年世界遺産登録）は急傾斜の茅葺き屋根が特徴的な集落で、欧米・アジアの観光客を魅了する`,
+    agriculture: "柿・栗・飛騨牛・鮎",
+    industry: "美濃焼（陶磁器）・刃物（関市）・航空機部品",
+    history: `${R("関ヶ原","せきがはら")}の戦い（1600年・天下分け目）の舞台。${R("岐阜城","ぎふじょう")}（稲葉山城）。${R("白川郷","しらかわごう")}の合掌造り。`,
+    celebrity: `${R("織田信長","おだのぶなが")}（天下統一を目指した戦国覇者）`
+  },
+  "静岡県": {
+    region: "中部",
+    ranking: "お茶生産量 全国1位（約33,600t・全国の約40%）／バイク生産台数 国内最大（ホンダ・ヤマハ・スズキ本社）",
+    worldFamous: "ホンダ・ヤマハ・スズキという世界トップクラスのバイクメーカー3社が静岡に本社を構え、世界の二輪車市場を牽引",
+    agriculture: "お茶（全国1位）・みかん・わさび",
+    industry: "バイク（ホンダ・ヤマハ・スズキ）・プラモデル・ピアノ",
+    history: `今川氏の本拠地→${R("徳川家康","とくがわいえやす")}が駿府城を居城に。三方ヶ原の戦い。`,
+    celebrity: `${R("徳川家康","とくがわいえやす")}（江戸幕府開祖・晩年は駿府城）`
+  },
+  "愛知県": {
+    region: "中部",
+    ranking: "製造品出荷額 全国1位（約48兆円・50年以上連続1位）／自動車生産台数 全国1位",
+    worldFamous: "トヨタ自動車は2023年の世界自動車販売台数1位（約1,123万台）の世界最大の自動車メーカー",
+    agriculture: "名古屋コーチン・いちじく・ういろう",
+    industry: "自動車（トヨタ本社）・航空機・機械（日本最大の工業県）",
+    history: `${R("織田信長","おだのぶなが")}・${R("豊臣秀吉","とよとみひでよし")}・${R("徳川家康","とくがわいえやす")}の三英傑が生まれた「三英傑の国」。`,
+    celebrity: `${R("豊臣秀吉","とよとみひでよし")}（農民から天下人へ・全国統一）`
+  },
+  "三重県": {
+    region: "近畿",
+    ranking: "伊勢海老漁獲量 全国1位／真珠輸出額 世界有数",
+    worldFamous: `${R("御木本幸吉","みきもとこうきち")}が世界で初めて真珠養殖を成功させた地（1893年）。「Mikimoto Pearl」は世界的ジュエリーブランドとして今も輝きを放つ`,
+    agriculture: "松阪牛（日本三大和牛）・伊勢海老・真珠",
+    industry: "石油化学・観光（伊勢神宮）・半導体",
+    history: `${R("伊勢神宮","いせじんぐう")}（天照大神・日本の聖地）。忍者の故郷・伊賀。江戸時代は${R("伊勢","いせ")}参りで賑わう。`,
+    celebrity: `${R("松尾芭蕉","まつおばしょう")}（俳聖・奥の細道）`
+  },
+  "滋賀県": {
+    region: "近畿",
+    ranking: "琵琶湖面積 全国1位（約669km²・日本最大の湖）",
+    worldFamous: "琵琶湖は約400万年前に形成された世界最古クラスの湖の一つ。固有種が60種以上生息する生物多様性の宝庫",
+    agriculture: "近江牛（日本三大和牛）・鮒ずし・びわ湖の魚",
+    industry: "繊維・電機・観光（彦根城・近江商人）",
+    history: `安土城（信長の居城）。関ヶ原前哨戦・小谷城。近江商人（「三方よし」の精神）。`,
+    celebrity: `${R("井伊直弼","いいなおすけ")}（幕末の大老・桜田門外の変で暗殺）`
+  },
+  "京都府": {
+    region: "近畿",
+    ranking: "世界遺産登録件数 全国1位（17件）／外国人宿泊者数 全国上位",
+    worldFamous: "「古都京都の文化財」として1994年に17件が一括世界遺産登録。金閣寺・清水寺・嵐山は世界の旅行者が必ず訪れる日本文化の象徴",
+    agriculture: "京野菜（賀茂なす・九条ねぎ）・宇治茶",
+    industry: "電子機器（京セラ・任天堂）・伝統工芸・観光",
+    history: `794年から1000年以上、日本の都。${R("平安京","へいあんきょう")}・金閣寺・清水寺等の世界遺産多数。`,
+    celebrity: `${R("紫式部","むらさきしきぶ")}（平安時代・源氏物語作者）`
+  },
+  "大阪府": {
+    region: "近畿",
+    ranking: "GDP 全国2位（約39兆円）／外国人観光客数 全国1位（大阪市）",
+    worldFamous: "たこ焼き・お好み焼きに代表される大阪のストリートフードは世界的に普及。USJは年間1,400万人超が来場する世界的テーマパーク",
+    agriculture: "なにわ野菜・水なす・泉州玉ねぎ",
+    industry: "化学・電機・食品（天下の台所）・観光（USJ）",
+    history: `大坂城（${R("豊臣秀吉","とよとみひでよし")}の居城）。天下の台所として江戸時代に繁栄した商業都市。`,
+    celebrity: `${R("松下幸之助","まつしたこうのすけ")}（パナソニック創業者・経営の神様）`
+  },
+  "兵庫県": {
+    region: "近畿",
+    ranking: "日本酒（灘の酒）生産量 全国1位（全国の約30%）／神戸港コンテナ取扱量 全国上位",
+    worldFamous: "神戸ビーフ（Kobe Beef）は「世界一高級な牛肉」として世界中のミシュラン星付きシェフが使用。姫路城（1993年世界遺産登録）は日本城郭の最高傑作",
+    agriculture: "神戸ビーフ（世界ブランド）・丹波黒豆・山田錦",
+    industry: "造船（神戸・播磨）・製鉄・日本酒（灘の酒）",
+    history: `${R("平清盛","たいらのきよもり")}が整備した神戸港（福原京遷都）。源平合戦の地。姫路城（世界遺産）。`,
+    celebrity: `${R("平清盛","たいらのきよもり")}（平氏政権・初の武家政権樹立）`
+  },
+  "奈良県": {
+    region: "近畿",
+    ranking: "柿生産量 全国1位（約3.5万t）／世界遺産3件（古都奈良・法隆寺・吉野山）",
+    worldFamous: "法隆寺（1993年世界遺産登録）は607年建立の世界最古の木造建築。東大寺の大仏（高さ約15m）は仏教美術の最高傑作として世界中の参拝者を迎える",
+    agriculture: "吉野杉（日本一の品質）・大和野菜・柿",
+    industry: "観光（東大寺・法隆寺）・伝統工芸・墨（奈良墨）",
+    history: `710年に${R("平城京","へいじょうきょう")}が置かれ、日本最初の首都。東大寺大仏・法隆寺（世界最古の木造建築）。`,
+    celebrity: `${R("聖武天皇","しょうむてんのう")}（東大寺・奈良大仏を建立）`
+  },
+  "和歌山県": {
+    region: "近畿",
+    ranking: "みかん生産量 全国1位（約18万t）／梅生産量 全国1位（約6万t・全国の約60%）",
+    worldFamous: `${R("熊野古道","くまのこどう")}（2004年世界遺産登録）はスペイン・サンティアゴ・デ・コンポステーラ巡礼路との姉妹協定を締結した唯一の世界遺産。世界中の巡礼者が訪れる`,
+    agriculture: "みかん（全国1位）・梅（南高梅・全国1位）・柿",
+    industry: "木材・観光（熊野古道）・漁業",
+    history: `紀州藩・徳川御三家の一つ。${R("熊野古道","くまのこどう")}（世界遺産）・高野山（空海の聖地）。`,
+    celebrity: `${R("南方熊楠","みなかたくまぐす")}（博物学者・世界的な粘菌研究者）`
+  },
+  "鳥取県": {
+    region: "中国",
+    ranking: "二十世紀梨生産量 全国1位（約4.5万t）／人口 全国最少（約53万人）",
+    worldFamous: "鳥取砂丘は日本最大の砂丘（南北2.4km・東西16km）。「日本でサハラ砂漠が見られる」として海外メディアに多数紹介",
+    agriculture: "二十世紀梨（全国1位）・砂丘長芋・スイカ",
+    industry: "観光（砂丘・コナン）・農業・IT誘致",
+    history: `因幡の国。因幡の白兎（古事記の神話）。鳥取砂丘は山陰の観光名所。`,
+    celebrity: `${R("青山剛昌","あおやまごうしょう")}（漫画家・名探偵コナン作者）`
+  },
+  "島根県": {
+    region: "中国",
+    ranking: "しじみ漁獲量 全国1位（宍道湖・年間約2,000〜3,000t）",
+    worldFamous: `${R("石見銀山","いわみぎんざん")}（2007年世界遺産登録）は16〜17世紀に世界の銀産出量の約3割を産出した銀山。出雲大社の「縁結びの神」信仰は海外でも広く知られる`,
+    agriculture: `しじみ（${R("宍道湖","しんじこ")}）・のどぐろ・松葉がに`,
+    industry: "マイコン・IC（ルネサスエレクトロニクス）・観光",
+    history: `${R("出雲大社","いずもたいしゃ")}（縁結びの神・大国主命）。${R("石見銀山","いわみぎんざん")}（世界遺産・世界の銀産出量の約3割）。`,
+    celebrity: `${R("小泉八雲","こいずみやくも")}（ラフカディオ・ハーン・日本を世界に紹介した文学者）`
+  },
+  "岡山県": {
+    region: "中国",
+    ranking: "マスカット生産量 全国1位／デニム・ジーンズ生産 全国1位（備前・備中地区）",
+    worldFamous: "岡山県児島は「日本のジーンズ聖地」として世界的に有名。リーバイスをはじめ世界の高級デニムブランドが岡山産のデニム生地を採用",
+    agriculture: "マスカット（全国1位）・白桃・黄ニラ",
+    industry: "繊維（デニム・岡山ジーンズ）・鉄鋼・化学",
+    history: `備前の国。吉備団子が桃太郎伝説の元に。${R("備前焼","びぜんやき")}（六古窯の一つ）。`,
+    celebrity: `${R("犬養毅","いぬかいつよし")}（第29代内閣総理大臣・五・一五事件で暗殺）`
+  },
+  "広島県": {
+    region: "中国",
+    ranking: "牡蠣生産量 全国1位（約9万t・全国の約60%）／レモン生産量 全国1位（約5,300t・全国の約30%）",
+    worldFamous: `原爆ドーム（1996年世界遺産登録）と広島平和記念公園は世界平和の象徴。毎年8月6日の平和記念式典には世界各国の代表が参列する`,
+    agriculture: "牡蠣（全国1位）・レモン（全国1位）・もみじ饅頭",
+    industry: "自動車（マツダ本社）・造船・鉄鋼",
+    history: `1945年8月6日に世界初の原子爆弾投下（平和記念公園・原爆ドーム世界遺産）。${R("厳島神社","いつくしまじんじゃ")}（世界遺産）。`,
+    celebrity: `${R("伊藤博文","いとうひろぶみ")}（初代内閣総理大臣）※山口県出身`
+  },
+  "山口県": {
+    region: "中国",
+    ranking: "ふく（ふぐ）水揚げ量 全国1位（下関・全国の約80%）／幕末の内閣総理大臣輩出数 全国1位",
+    worldFamous: "秋吉台・秋芳洞は日本最大のカルスト台地（約14,000ha）・日本最大の鍾乳洞（総延長約10km）として世界の地質学者も注目",
+    agriculture: "ふく（ふぐ）・夏みかん・あんこう",
+    industry: "化学・セメント・造船（下関造船）",
+    history: `長州藩・幕末維新の志士の故郷（${R("伊藤博文","いとうひろぶみ")}・${R("木戸孝允","きどたかよし")}）。下関条約（日清戦争終結）。`,
+    celebrity: `${R("伊藤博文","いとうひろぶみ")}（初代内閣総理大臣・日本近代化を主導）`
+  },
+  "徳島県": {
+    region: "四国",
+    ranking: "すだち生産量 全国1位（約6,000t・全国の約98%）／鳴門渦潮は世界最大級（渦直径約20m）",
+    worldFamous: "日亜化学工業の中村修二氏が開発した青色LED（1993年）は世界のLED照明革命をもたらし、2014年ノーベル物理学賞を受賞",
+    agriculture: "すだち（全国1位）・鳴門金時・阿波尾鶏",
+    industry: "LED（日亜化学・青色LED発明）・化学・藍染め",
+    history: `${R("阿波踊り","あわおどり")}（日本三大盆踊りの一つ）。阿波の国。鳴門の渦潮（世界最大級）。`,
+    celebrity: `${R("中村修二","なかむらしゅうじ")}（青色LED発明・2014年ノーベル物理学賞）`
+  },
+  "香川県": {
+    region: "四国",
+    ranking: "うどん消費量 全国1位（一人当たり年間200玉以上・全国平均の約4倍）／オリーブ生産量 全国1位（小豆島）",
+    worldFamous: "直島・瀬戸内国際芸術祭は草間彌生・安藤忠雄作品で世界的アート聖地に。海外の芸術誌で「世界で最も訪れるべきアート島」に選出",
+    agriculture: "讃岐うどん（全国的ブランド）・オリーブ（小豆島）・和三盆",
+    industry: "造船・製油・観光（うどん・瀬戸内）",
+    history: `讃岐の国。源平合戦の屋島の戦い。${R("金比羅宮","こんぴらぐう")}（海上安全の神）。`,
+    celebrity: `${R("平賀源内","ひらがげんない")}（発明家・エレキテル・土用丑の日を発案）`
+  },
+  "愛媛県": {
+    region: "四国",
+    ranking: "みかん生産量 全国2位（約12万t）／今治タオル出荷額 全国1位／真珠養殖生産量 全国1位",
+    worldFamous: "しまなみ海道（全長約70km）はCNN「世界で最もすばらしいサイクリングコースの一つ」に選出。今治タオルは世界基準の品質ブランド",
+    agriculture: "みかん（全国2位）・真珠（宇和島）・キウイ",
+    industry: "製紙（大王製紙）・タオル（今治タオル）・造船",
+    history: `伊予の国。松山城（現存12天守）。俳句の聖地（${R("正岡子規","まさおかしき")}の故郷）。`,
+    celebrity: `${R("正岡子規","まさおかしき")}（俳人・俳句・短歌の革新者）`
+  },
+  "高知県": {
+    region: "四国",
+    ranking: "カツオ水揚げ量 全国1位（一本釣り）／ゆず生産量 全国1位（約1.5万t・全国の約45%）",
+    worldFamous: "坂本龍馬は欧米の歴史書でも「日本の近代化に最も貢献した革命家」として紹介される。「龍馬」の名は日本史上最も海外で知られる幕末の志士",
+    agriculture: "カツオのたたき（一本釣り）・ゆず（全国1位）・土佐文旦",
+    industry: "和紙（土佐和紙）・観光（龍馬・よさこい）",
+    history: `土佐の国。${R("坂本龍馬","さかもとりょうま")}の薩長同盟が明治維新を成し遂げた。よさこい祭り。`,
+    celebrity: `${R("坂本龍馬","さかもとりょうま")}（幕末の志士・薩長同盟を成立させ維新に貢献）`
+  },
+  "福岡県": {
+    region: "九州・沖縄",
+    ranking: "人口 全国9位（約519万人・九州1位）／あまおういちご出荷額 全国1位",
+    worldFamous: "博多ラーメン（豚骨ラーメン）は世界中のラーメンブームの中心。NYからパリまで世界中に博多ラーメン専門店が進出し「Hakata Ramen」は国際ブランドに成長",
+    agriculture: "あまおう（いちご・最高ブランド）・博多ねぎ・小麦",
+    industry: "鉄鋼（北九州・八幡製鉄所）・自動車・IT（福岡市）",
+    history: `${R("大宰府","だざいふ")}（西日本の政治中枢）。元寇（蒙古襲来）を二度退けた地。博多は日本最古の国際港。`,
+    celebrity: `${R("黒田官兵衛","くろだかんべえ")}（軍師・天下人を二人支えた名参謀）`
+  },
+  "佐賀県": {
+    region: "九州・沖縄",
+    ranking: "有田焼輸出額 全国上位（400年以上の歴史）",
+    worldFamous: `${R("有田焼","ありたやき")}（Arita Porcelain）は1659年からオランダ東インド会社を通じてヨーロッパ王室に輸出。マイセン・デルフト焼きなど欧州磁器の発展に決定的な影響を与えた`,
+    agriculture: "有明海のムツゴロウ・嬉野茶・佐賀牛",
+    industry: `${R("有田焼","ありたやき")}（世界に輸出された磁器・400年の歴史）・造船`,
+    history: `肥前の国。豊臣秀吉の朝鮮出兵（名護屋城）の拠点。${R("有田焼","ありたやき")}を生んだ陶磁器文化。`,
+    celebrity: `${R("大隈重信","おおくましげのぶ")}（早稲田大学創設者・第8・17代内閣総理大臣）`
+  },
+  "長崎県": {
+    region: "九州・沖縄",
+    ranking: "離島の数 全国1位（971島）／造船業出荷額 全国上位（三菱重工）",
+    worldFamous: "軍艦島（端島・2015年世界遺産登録）は明治日本の産業革命遺産の象徴として世界の廃墟ファンにも知られる。長崎出島は17〜19世紀の鎖国期、日本と西洋を結ぶ唯一の窓口だった",
+    agriculture: "びわ・長崎和牛・活魚",
+    industry: "造船（三菱重工）・観光（出島・軍艦島）",
+    history: `江戸時代、鎖国中唯一の西洋との窓口・出島（オランダ・中国貿易）。長崎原爆（1945年8月9日）。`,
+    celebrity: "シーボルト（ドイツ人医師・日本を欧米に紹介・鳴滝塾）"
+  },
+  "熊本県": {
+    region: "九州・沖縄",
+    ranking: "トマト生産量 全国1位（約14万t・全国の約20%）／い草生産量 全国1位（全国の約90%）",
+    worldFamous: "TSMCの熊本工場（JASM・2024年開所）は世界最先端の半導体製造の日本拠点として世界のIT産業が注目。くまモンは世界的ゆるキャラの経済効果モデルケース",
+    agriculture: "トマト（全国1位）・い草（全国1位）・熊本メロン",
+    industry: "半導体（TSMC熊本工場・日本の半導体再生の拠点）・食品",
+    history: `肥後の国。${R("加藤清正","かとうきよまさ")}が建てた熊本城（難攻不落の名城）。西南戦争の激戦地。`,
+    celebrity: `${R("加藤清正","かとうきよまさ")}（熊本城を築城した戦国武将）`
+  },
+  "大分県": {
+    region: "九州・沖縄",
+    ranking: "温泉湧出量 全国1位（約28万L/分・世界2位）／源泉数 全国1位（約4,400か所）／かぼす生産量 全国1位（全国の約95%）",
+    worldFamous: "別府温泉は世界最大クラスの温泉地（湧出量・源泉数とも世界トップ）。「地獄めぐり」は海外旅行ガイドに必ず掲載され、アジア・欧米から年間100万人超の外国人観光客が訪れる",
+    agriculture: "かぼす（全国1位）・関サバ・関アジ",
+    industry: "IC・半導体・温泉観光（別府・湯布院）",
+    history: `豊後の国。${R("大友宗麟","おおともそうりん")}がフランシスコ・ザビエルを招き南蛮文化が花開く。別府温泉（世界一の湧出量）。`,
+    celebrity: `${R("福沢諭吉","ふくざわゆきち")}（啓蒙思想家・慶應義塾創設者・旧一万円札）`
+  },
+  "宮崎県": {
+    region: "九州・沖縄",
+    ranking: "マンゴー生産量 全国1位（約3,000t・全国の約50%）／きゅうり生産量 全国1位（約6万t）",
+    worldFamous: "高千穂峡は日本神話「天岩戸」の舞台として世界の神話・文化ファンが訪れる聖地。宮崎はMLB選手も訪問するプロ野球春季キャンプ地としても海外メディアが注目",
+    agriculture: "マンゴー（全国1位）・宮崎地鶏・きゅうり",
+    industry: "電子部品・食品加工・観光（神話の里）",
+    history: `日向の国。古事記・日本書紀に登場する神話の舞台（天孫降臨・${R("高千穂峡","たかちほきょう")}）。`,
+    celebrity: "東国原英夫（元宮崎県知事・タレント）"
+  },
+  "鹿児島県": {
+    region: "九州・沖縄",
+    ranking: "さつまいも生産量 全国1位（約29万t・全国の約35%）／黒豚生産量 全国1位",
+    worldFamous: `${R("屋久島","やくしま")}（1993年世界遺産登録）の縄文杉（推定樹齢2,170〜7,200年）は世界最古クラスの巨木として世界中の自然愛好家を引き付ける`,
+    agriculture: "さつまいも（全国1位）・黒豚・お茶",
+    industry: "食品加工・宇宙産業（種子島宇宙センター）",
+    history: `薩摩藩・島津家。幕末に薩長同盟→${R("西郷隆盛","さいごうたかもり")}が明治維新を主導。西南戦争で終焉。`,
+    celebrity: `${R("西郷隆盛","さいごうたかもり")}（明治維新の立役者・西南戦争で壮絶な最期）`
+  },
+  "沖縄県": {
+    region: "九州・沖縄",
+    ranking: "サトウキビ生産量 全国1位（全国の約70%）／パイナップル生産量 全国1位",
+    worldFamous: `琉球王国の${R("グスク","ぐすく")}及び関連遺産群（2000年世界遺産登録）。美ら海水族館のジンベエザメ展示は世界最大規模でCNN「世界で最も美しい水族館」に選出。空手の発祥地としても国際的に有名`,
+    agriculture: "さとうきび（全国1位）・パイナップル・泡盛用米",
+    industry: "観光（首里城・美ら海水族館）・基地関連・情報通信",
+    history: `1429年に${R("尚巴志","しょうはし")}が三山を統一し琉球王国成立。1879年廃藩置県で日本に編入。`,
+    celebrity: `${R("尚巴志","しょうはし")}（琉球王国初代国王・三山統一）`
+  }
+};
+
+// ===== 地域カラー =====
+const regionColors = {
+  "北海道・東北": "#2d5a8e",
+  "関東":         "#1a6b3c",
+  "中部":         "#7a4419",
+  "近畿":         "#6b1a6b",
+  "中国":         "#1a5c5c",
+  "四国":         "#5c4a1a",
+  "九州・沖縄":   "#6b1a1a"
+};
+const regionHover = {
+  "北海道・東北": "#3d7abf",
+  "関東":         "#26a05a",
+  "中部":         "#a85d22",
+  "近畿":         "#9b28a0",
+  "中国":         "#228888",
+  "四国":         "#8a6d28",
+  "九州・沖縄":   "#a02828"
+};
+
+// ===== HTMLヘルパー =====
+function stripHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+}
+
+// ===== パネル =====
+const svg       = d3.select("#map");
+const tooltip   = document.getElementById("tooltip");
+const prefName  = document.getElementById("pref-name");
+const prefRegion= document.getElementById("pref-region");
+const hint      = document.getElementById("hint");
+const infoCards = document.getElementById("info-cards");
+let selectedEl  = null;
+
+function updatePanel(name, data) {
+  prefName.textContent = name;
+  prefRegion.textContent = `地域: ${data.region}`;
+  document.getElementById("info-ranking").innerHTML    = data.ranking   || "データなし";
+  document.getElementById("info-world").innerHTML      = data.worldFamous|| "データなし";
+  document.getElementById("info-agriculture").innerHTML= data.agriculture;
+  document.getElementById("info-industry").innerHTML   = data.industry;
+  document.getElementById("info-history").innerHTML    = data.history;
+  document.getElementById("info-celebrity").innerHTML  = data.celebrity;
+  hint.style.display     = "none";
+  infoCards.style.display= "block";
+}
+
+// ===== D3 地図描画 =====
+let projection, pathGen;
+
+async function init() {
+  const geojson = await d3.json(
+    "https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson"
+  );
+  const container = document.getElementById("map-container");
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+
+  projection = d3.geoMercator()
+    .center([137, 36])
+    .scale(1500)
+    .translate([w * 0.45, h * 0.5]);
+  pathGen = d3.geoPath().projection(projection);
+
+  const g = svg.append("g");
+
+  g.selectAll("path")
+    .data(geojson.features)
+    .join("path")
+    .attr("class", "prefecture")
+    .attr("d", pathGen)
+    .style("fill", d => {
+      const name = d.properties.nam_ja || d.properties.nam;
+      return regionColors[prefectureData[name]?.region] || "#1f6feb";
+    })
+    .on("mousemove", function(event, d) {
+      const name = d.properties.nam_ja || d.properties.nam;
+      tooltip.style.opacity = "1";
+      tooltip.style.left = (event.offsetX + 12) + "px";
+      tooltip.style.top  = (event.offsetY - 10) + "px";
+      tooltip.textContent = name;
+      if (this !== selectedEl) {
+        const reg = prefectureData[name]?.region;
+        d3.select(this).style("fill", regionHover[reg] || "#388bfd");
+      }
+    })
+    .on("mouseleave", function(event, d) {
+      tooltip.style.opacity = "0";
+      if (this !== selectedEl) {
+        const name = d.properties.nam_ja || d.properties.nam;
+        const reg  = prefectureData[name]?.region;
+        d3.select(this).style("fill", regionColors[reg] || "#1f6feb");
+      }
+    })
+    .on("click", function(event, d) {
+      const name = d.properties.nam_ja || d.properties.nam;
+      if (selectedEl) {
+        const prevName = d3.select(selectedEl).datum().properties.nam_ja;
+        const prevReg  = prefectureData[prevName]?.region;
+        d3.select(selectedEl).style("fill", regionColors[prevReg] || "#1f6feb");
+      }
+      selectedEl = this;
+      d3.select(this).style("fill", "#58a6ff");
+      if (prefectureData[name]) {
+        updatePanel(name, prefectureData[name]);
+      }
+    });
+
+  // 頭文字ラベル
+  g.selectAll("text.pref-label")
+    .data(geojson.features)
+    .join("text")
+    .attr("class", "pref-label")
+    .attr("x", d => pathGen.centroid(d)[0])
+    .attr("y", d => pathGen.centroid(d)[1])
+    .text(d => {
+      const name = d.properties.nam_ja || d.properties.nam;
+      return name ? name[0] : "";
+    });
+
+  // ズーム（ピンチ対応）
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 8])
+    .on("zoom", event => g.attr("transform", event.transform));
+  svg.call(zoom);
+}
+
+// ===== 凡例 =====
+(function buildLegend() {
+  const legend = document.getElementById("legend");
+  Object.entries(regionColors).forEach(([region, color]) => {
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<div class="legend-dot" style="background:${color};"></div>${region}`;
+    legend.appendChild(item);
+  });
+})();
+
+// ===== クイズ =====
+const quizCategories = [
+  { key: "agriculture",  label: "農業特産",         color: "#3fb950", emoji: "🌾" },
+  { key: "industry",     label: "工業・産業",        color: "#f0883e", emoji: "🏭" },
+  { key: "ranking",      label: "全国ランキング",     color: "#ffd700", emoji: "🏆" },
+  { key: "worldFamous",  label: "世界的に有名なこと", color: "#56d6f6", emoji: "🌍" },
+  { key: "celebrity",    label: "著名人",             color: "#ffa657", emoji: "👤" },
+  { key: "history",      label: "歴史",              color: "#d2a8ff", emoji: "🏯" },
+];
+
+const allPrefs = Object.keys(prefectureData);
+const TIMER_SEC = 15;
+const qs = {
+  score: 0, total: 0, streak: 0,
+  highScore: parseInt(localStorage.getItem("jpMapHighScore") || "0"), // APIロード後に上書き
+  timer: null, timeLeft: TIMER_SEC, answered: false, autoTimer: null,
+};
+
+const randItem = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function genTypeA() {
+  const cat     = randItem(quizCategories);
+  const correct = randItem(allPrefs);
+  const wrongs  = allPrefs.filter(p => p !== correct).sort(() => Math.random() - 0.5).slice(0, 3);
+  const raw     = stripHtml(prefectureData[correct][cat.key] || "");
+  const excerpt = raw.length > 65 ? raw.slice(0, 65) + "…" : raw;
+  return {
+    type: "A", cat, correct, excerpt,
+    choices: [correct, ...wrongs].sort(() => Math.random() - 0.5),
+    isCorrect: c => c === correct,
+    choiceLabel: c => c,
+    correctLabel: correct,
+  };
+}
+
+function genTypeB() {
+  const cat         = randItem(quizCategories);
+  const correct     = randItem(allPrefs);
+  const wrongs      = allPrefs.filter(p => p !== correct).sort(() => Math.random() - 0.5).slice(0, 3);
+  const correctText = stripHtml(prefectureData[correct][cat.key] || "");
+  const allChoices  = [
+    { pref: correct, text: correctText },
+    ...wrongs.map(p => ({ pref: p, text: stripHtml(prefectureData[p][cat.key] || "") })),
+  ].sort(() => Math.random() - 0.5);
+  const trim = t => t.length > 48 ? t.slice(0, 48) + "…" : t;
+  return {
+    type: "B", cat, correct, excerpt: null,
+    prefLabel: correct,
+    choices: allChoices.map(c => c.text),
+    isCorrect: t => t === correctText,
+    choiceLabel: t => trim(t),
+    correctLabel: trim(correctText),
+  };
+}
+
+function generateQuiz() { return Math.random() < 0.5 ? genTypeA() : genTypeB(); }
+
+function startTimer() {
+  clearInterval(qs.timer);
+  qs.timeLeft = TIMER_SEC;
+  const bar = document.getElementById("quiz-timer-bar");
+  bar.style.transition = "none";
+  bar.style.width = "100%";
+  bar.className = "";
+  void bar.offsetWidth;
+  bar.style.transition = `width ${TIMER_SEC}s linear`;
+  bar.style.width = "0%";
+  qs.timer = setInterval(() => {
+    qs.timeLeft--;
+    if      (qs.timeLeft <= 5) bar.className = "danger";
+    else if (qs.timeLeft <= 8) bar.className = "warn";
+    if (qs.timeLeft <= 0) { clearInterval(qs.timer); if (!qs.answered) timeUp(); }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(qs.timer);
+  const bar = document.getElementById("quiz-timer-bar");
+  bar.style.transition = "none";
+  bar.style.width = bar.style.width; // freeze current width
+}
+
+function timeUp() {
+  qs.answered = true;
+  qs.total++;
+  qs.streak = 0;
+  updateStreakDisplay();
+  const choicesEl = document.getElementById("quiz-choices");
+  choicesEl.querySelectorAll(".quiz-choice").forEach(b => {
+    b.disabled = true;
+    if (b.dataset.correct === "1") b.classList.add("correct");
+  });
+  const correctBtn = choicesEl.querySelector("[data-correct='1']");
+  const result = document.getElementById("quiz-result");
+  result.innerHTML = `⏱ 時間切れ！正解は「<strong>${correctBtn ? correctBtn.textContent : "？"}</strong>」でした`;
+  result.className = "quiz-result show ng";
+  updateScoreDisplay();
+  autoAdvance(2500);
+}
+
+function autoAdvance(ms) {
+  clearTimeout(qs.autoTimer);
+  const el = document.getElementById("quiz-auto-next");
+  let count = Math.ceil(ms / 1000);
+  el.textContent = `${count}秒後に次の問題へ…`;
+  el.classList.add("show");
+  const tick = setInterval(() => { count--; count > 0 ? el.textContent = `${count}秒後に次の問題へ…` : clearInterval(tick); }, 1000);
+  qs.autoTimer = setTimeout(() => { el.classList.remove("show"); renderQuiz(); }, ms);
+}
+
+function updateStreakDisplay() {
+  const el = document.getElementById("quiz-streak-line");
+  if      (qs.streak >= 10) el.textContent = `⚡ ${qs.streak}コンボ！！！`;
+  else if (qs.streak >= 7)  el.textContent = `💥 ${qs.streak}コンボ！！`;
+  else if (qs.streak >= 5)  el.textContent = `🔥 ${qs.streak}コンボ！`;
+  else if (qs.streak >= 3)  el.textContent = `🔥 ${qs.streak}コンボ`;
+  else el.textContent = qs.streak > 0 ? `✓ ${qs.streak}連続正解` : "";
+}
+
+function updateScoreDisplay() {
+  document.getElementById("quiz-score-num").textContent = qs.score;
+  document.getElementById("quiz-high-num").textContent  = qs.highScore;
+  document.getElementById("quiz-qnum").textContent      = qs.total > 0 ? `Q${qs.total}` : "";
+}
+
+function showScorePop(text) {
+  const el = document.createElement("div");
+  el.className = "score-pop";
+  el.textContent = text;
+  document.getElementById("quiz-box").appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+function renderQuiz() {
+  clearTimeout(qs.autoTimer);
+  document.getElementById("quiz-auto-next").classList.remove("show");
+  qs.answered = false;
+  const q = generateQuiz();
+
+  document.getElementById("quiz-type-badge").textContent = q.type === "A" ? "どの都道府県？" : "どの情報が正しい？";
+
+  const catBadge = document.getElementById("quiz-cat-badge");
+  catBadge.textContent = `${q.cat.emoji} ${q.cat.label}`;
+  catBadge.style.cssText = `background:${q.cat.color}22;color:${q.cat.color};border:1px solid ${q.cat.color}44;`;
+
+  const qEl = document.getElementById("quiz-question");
+  if (q.type === "A") {
+    qEl.innerHTML = `次の【${q.cat.label}】を持つ都道府県はどこ？<span class="info-highlight">「${q.excerpt}」</span>`;
+  } else {
+    qEl.innerHTML = `<span class="pref-highlight">${q.prefLabel}</span>の【${q.cat.label}】として正しいのはどれ？`;
+  }
+
+  const choicesEl = document.getElementById("quiz-choices");
+  choicesEl.innerHTML = "";
+  choicesEl.dataset.type = q.type;
+  q.choices.forEach(choice => {
+    const btn = document.createElement("button");
+    btn.className = "quiz-choice";
+    btn.textContent = q.choiceLabel(choice);
+    if (q.isCorrect(choice)) btn.dataset.correct = "1";
+    btn.addEventListener("click", () => {
+      if (qs.answered) return;
+      qs.answered = true;
+      qs.total++;
+      stopTimer();
+      choicesEl.querySelectorAll(".quiz-choice").forEach(b => {
+        b.disabled = true;
+        if (b.dataset.correct === "1") b.classList.add("correct");
+      });
+      const result  = document.getElementById("quiz-result");
+      const nextBtn = document.getElementById("quiz-next");
+      if (q.isCorrect(choice)) {
+        btn.classList.add("correct");
+        qs.streak++;
+        const timeBonus   = Math.max(0, qs.timeLeft);
+        const streakBonus = qs.streak >= 10 ? 10 : qs.streak >= 5 ? 5 : qs.streak >= 3 ? 3 : 0;
+        const gained      = 10 + timeBonus + streakBonus;
+        qs.score += gained;
+        if (qs.score > qs.highScore) { qs.highScore = qs.score; saveHighScore(qs.highScore); }
+        updateStreakDisplay();
+        const bonusParts = [];
+        if (timeBonus   > 0) bonusParts.push(`タイムボーナス +${timeBonus}`);
+        if (streakBonus > 0) bonusParts.push(`コンボボーナス +${streakBonus}`);
+        const bonusLine = bonusParts.length ? `<div class="bonus-text">${bonusParts.join(" / ")}</div>` : "";
+        result.innerHTML = `✓ 正解！ +${gained}pt${bonusLine}`;
+        result.className = "quiz-result show ok";
+        showScorePop(`+${gained}pt`);
+      } else {
+        btn.classList.add("wrong");
+        qs.streak = 0;
+        updateStreakDisplay();
+        result.innerHTML = `✗ 不正解… 正解は「<strong>${q.correctLabel}</strong>」でした`;
+        result.className = "quiz-result show ng";
+      }
+      updateScoreDisplay();
+      nextBtn.classList.add("show");
+    });
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById("quiz-result").className = "quiz-result";
+  document.getElementById("quiz-next").classList.remove("show");
+  updateScoreDisplay();
+  startTimer();
+}
+
+function resetQuiz() {
+  clearInterval(qs.timer);
+  clearTimeout(qs.autoTimer);
+  qs.score = 0; qs.total = 0; qs.streak = 0; qs.answered = false;
+  document.getElementById("quiz-streak-line").textContent = "";
+  document.getElementById("quiz-auto-next").classList.remove("show");
+  updateScoreDisplay();
+}
+
+document.getElementById("quiz-btn").addEventListener("click", () => {
+  resetQuiz();
+  document.getElementById("quiz-overlay").classList.add("active");
+  renderQuiz();
+});
+document.getElementById("quiz-close").addEventListener("click", () => {
+  resetQuiz();
+  document.getElementById("quiz-overlay").classList.remove("active");
+});
+document.getElementById("quiz-next").addEventListener("click", () => {
+  clearTimeout(qs.autoTimer);
+  document.getElementById("quiz-auto-next").classList.remove("show");
+  renderQuiz();
+});
+document.getElementById("quiz-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("quiz-overlay")) {
+    resetQuiz();
+    document.getElementById("quiz-overlay").classList.remove("active");
+  }
+});
+
+// IPごとのハイスコアをAPIで管理（フォールバック: localStorage）
+async function loadHighScore() {
+  try {
+    const res = await fetch("/api/score");
+    if (res.ok) {
+      const { highScore } = await res.json();
+      if (highScore > qs.highScore) {
+        qs.highScore = highScore;
+        localStorage.setItem("jpMapHighScore", highScore);
+        updateScoreDisplay();
+      }
+    }
+  } catch { /* オフライン時はlocalStorageの値を使用 */ }
+}
+
+async function saveHighScore(score) {
+  localStorage.setItem("jpMapHighScore", score);
+  try {
+    await fetch("/api/score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score }),
+    });
+  } catch { /* ignore */ }
+}
+
+loadHighScore();
+init().catch(() => {
+  document.getElementById("hint").textContent = "地図の読み込みに失敗しました。ネットワーク接続を確認してください。";
+});
+</script>
+</body>
+</html>
