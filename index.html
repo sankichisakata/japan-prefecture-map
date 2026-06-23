@@ -355,6 +355,86 @@ rt { font-size: 0.6em; color: #8b949e; }
 #quiz-auto-next { text-align:center; font-size:12px; color:#484f58; margin-top:6px; display:none; }
 #quiz-auto-next.show { display:block; }
 
+/* ===== クイズ画面管理 ===== */
+.quiz-screen { display: none; }
+.quiz-screen.active { display: block; }
+
+/* モード選択 */
+.qms-title { text-align:center; font-size:16px; font-weight:bold; color:#e6edf3; margin-bottom:20px; padding-top:4px; }
+.qms-cards { display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+.mode-card {
+  display:flex; align-items:center; gap:14px;
+  background:#1c2128; border:2px solid #30363d; border-radius:10px;
+  padding:16px; cursor:pointer; transition:all 0.15s; text-align:left; width:100%;
+}
+.mode-card:hover { border-color:#388bfd; background:#1a2233; }
+.mc-icon { font-size:28px; flex-shrink:0; }
+.mc-name { font-size:15px; font-weight:bold; color:#e6edf3; margin-bottom:4px; }
+.mc-desc { font-size:12px; color:#8b949e; line-height:1.5; }
+#qms-close { width:100%; background:none; border:1px solid #30363d; color:#8b949e; border-radius:8px; padding:8px; cursor:pointer; font-size:13px; }
+#qms-close:hover { border-color:#f85149; color:#f85149; }
+
+/* ライフ */
+#quiz-lives { display:flex; gap:3px; align-items:center; }
+.life-icon { font-size:16px; line-height:1; transition:all 0.3s; }
+.life-icon.lost { opacity:0.15; filter:grayscale(1); transform:scale(0.85); }
+
+/* ゲームオーバー */
+#quiz-gameover-screen { text-align:center; padding:8px 0; }
+#go-icon { font-size:52px; margin-bottom:6px; }
+#go-title { font-size:22px; font-weight:bold; color:#f85149; margin-bottom:14px; }
+#go-stats {
+  display:flex; justify-content:center; gap:20px;
+  margin-bottom:16px; padding:14px; background:#1c2128; border-radius:10px;
+}
+.gs-item { font-size:11px; color:#8b949e; }
+.gs-num { font-size:22px; font-weight:bold; color:#e6edf3; display:block; margin-top:4px; }
+#go-rank-result { font-size:13px; color:#8b949e; margin-bottom:14px; min-height:20px; }
+#go-rank-result.ok { color:#3fb950; }
+#go-buttons { display:flex; flex-direction:column; gap:8px; }
+#go-retry { background:#238636; color:#fff; border:none; border-radius:8px; padding:12px; font-size:14px; font-weight:bold; cursor:pointer; }
+#go-retry:hover { background:#2ea043; }
+#go-mode-select { background:#1c2128; color:#c9d1d9; border:1px solid #30363d; border-radius:8px; padding:10px; font-size:13px; cursor:pointer; }
+#go-mode-select:hover { border-color:#58a6ff; }
+#go-close-btn { background:none; color:#8b949e; border:none; font-size:12px; cursor:pointer; margin-top:2px; }
+#go-close-btn:hover { color:#f85149; }
+
+/* ===== ランキングパネル ===== */
+#rank-panel {
+  position:fixed; top:54px; right:12px; width:210px;
+  background:#161b22; border:1px solid #30363d; border-radius:10px;
+  z-index:50; box-shadow:0 4px 20px rgba(0,0,0,0.6);
+}
+#rank-header {
+  display:flex; align-items:center; padding:10px 12px;
+  border-bottom:1px solid #21262d; cursor:pointer; user-select:none; gap:6px;
+}
+#rank-title { font-size:13px; font-weight:bold; color:#ffd700; flex:1; }
+#rank-refresh {
+  background:none; border:none; color:#8b949e; cursor:pointer;
+  font-size:15px; padding:0 2px; line-height:1;
+}
+#rank-refresh:hover { color:#e6edf3; }
+#rank-toggle { background:none; border:none; color:#8b949e; font-size:10px; cursor:pointer; transition:transform 0.2s; }
+#rank-body { max-height:300px; overflow-y:auto; }
+#rank-panel.collapsed #rank-body { display:none; }
+#rank-panel.collapsed #rank-toggle { transform:rotate(180deg); }
+.rank-item {
+  display:flex; align-items:center; padding:7px 12px; gap:8px;
+  border-bottom:1px solid #1c2128;
+}
+.rank-item:last-child { border-bottom:none; }
+.rank-num { color:#8b949e; width:18px; text-align:right; font-size:11px; flex-shrink:0; }
+.rank-num.gold   { color:#ffd700; font-weight:bold; }
+.rank-num.silver { color:#b0b8c4; font-weight:bold; }
+.rank-num.bronze { color:#cd7f32; font-weight:bold; }
+.rank-info { flex:1; min-width:0; }
+.rank-pref { color:#e6edf3; font-size:12px; font-weight:bold; }
+.rank-time { color:#484f58; font-size:10px; }
+.rank-score { color:#ffd700; font-weight:bold; font-size:13px; flex-shrink:0; }
+#rank-empty { text-align:center; color:#484f58; padding:16px 12px; font-size:12px; }
+#rank-loading { text-align:center; color:#484f58; padding:12px; font-size:12px; }
+
 /* ===== モバイル対応 ===== */
 @media (max-width: 700px) {
   #main { flex-direction: column; }
@@ -374,10 +454,15 @@ rt { font-size: 0.6em; color: #8b949e; }
   #quiz-btn { font-size: 11px; padding: 5px 10px; }
   #quiz-choices { grid-template-columns: 1fr 1fr; gap: 8px; }
   .quiz-choice { font-size: 12px; padding: 10px 6px; }
-  #quiz-box { padding: 16px; }
+  #quiz-box { padding: 14px; }
+  #rank-panel { width: 160px; top: 50px; right: 8px; }
+  #rank-panel.collapsed #rank-body { display: none; }
+  .rank-pref { font-size: 11px; }
+  .rank-score { font-size: 12px; }
 }
 @media (max-width: 400px) {
   .pref-label { font-size: 5.5px; }
+  #rank-panel { width: 140px; }
 }
 </style>
 </head>
@@ -429,28 +514,85 @@ rt { font-size: 0.6em; color: #8b949e; }
 </div>
 <div class="legend" id="legend"></div>
 
+<!-- ランキングパネル（右上固定） -->
+<div id="rank-panel">
+  <div id="rank-header">
+    <span id="rank-title">🏆 ランキング</span>
+    <button id="rank-refresh" title="更新">↺</button>
+    <button id="rank-toggle">▲</button>
+  </div>
+  <div id="rank-body">
+    <div id="rank-loading">読み込み中…</div>
+  </div>
+</div>
+
 <!-- クイズオーバーレイ -->
 <div id="quiz-overlay">
   <div id="quiz-box">
-    <div id="quiz-header">
-      <div id="quiz-stats">
-        <div id="quiz-score-line">スコア: <span id="quiz-score-num">0</span>pt</div>
-        <div id="quiz-high-line">ハイスコア: <span id="quiz-high-num">0</span>pt</div>
-        <div id="quiz-streak-line"></div>
+
+    <!-- ① モード選択画面 -->
+    <div id="quiz-mode-screen" class="quiz-screen active">
+      <div class="qms-title">47都道府県クイズ</div>
+      <div class="qms-cards">
+        <button class="mode-card" id="mode-ranking-btn">
+          <div class="mc-icon">🏆</div>
+          <div>
+            <div class="mc-name">ランキングモード</div>
+            <div class="mc-desc">ミス3回でゲームオーバー<br>スコアがランキングに登録される</div>
+          </div>
+        </button>
+        <button class="mode-card" id="mode-practice-btn">
+          <div class="mc-icon">📚</div>
+          <div>
+            <div class="mc-name">練習モード</div>
+            <div class="mc-desc">ミス無制限 / ランキング登録なし<br>気軽に都道府県を学ぼう</div>
+          </div>
+        </button>
       </div>
-      <button id="quiz-close">✕ 終了</button>
+      <button id="qms-close">✕ 閉じる</button>
     </div>
-    <div id="quiz-timer-wrap"><div id="quiz-timer-bar"></div></div>
-    <div id="quiz-meta">
-      <span id="quiz-type-badge"></span>
-      <span id="quiz-cat-badge"></span>
-      <span id="quiz-qnum"></span>
+
+    <!-- ② ゲーム画面 -->
+    <div id="quiz-game-screen" class="quiz-screen">
+      <div id="quiz-header">
+        <div id="quiz-stats">
+          <div id="quiz-score-line">スコア: <span id="quiz-score-num">0</span>pt</div>
+          <div id="quiz-high-line">ハイスコア: <span id="quiz-high-num">0</span>pt</div>
+          <div id="quiz-streak-line"></div>
+        </div>
+        <div id="quiz-lives"></div>
+        <button id="quiz-close">✕</button>
+      </div>
+      <div id="quiz-timer-wrap"><div id="quiz-timer-bar"></div></div>
+      <div id="quiz-meta">
+        <span id="quiz-type-badge"></span>
+        <span id="quiz-cat-badge"></span>
+        <span id="quiz-qnum"></span>
+      </div>
+      <div id="quiz-question"></div>
+      <div id="quiz-choices"></div>
+      <div id="quiz-result"></div>
+      <button id="quiz-next">次の問題 →</button>
+      <div id="quiz-auto-next"></div>
     </div>
-    <div id="quiz-question"></div>
-    <div id="quiz-choices"></div>
-    <div id="quiz-result"></div>
-    <button id="quiz-next">次の問題 →</button>
-    <div id="quiz-auto-next"></div>
+
+    <!-- ③ ゲームオーバー画面 -->
+    <div id="quiz-gameover-screen" class="quiz-screen">
+      <div id="go-icon">💀</div>
+      <div id="go-title">ゲームオーバー</div>
+      <div id="go-stats">
+        <div class="gs-item"><span class="gs-num" id="go-score">0</span>pt</div>
+        <div class="gs-item"><span class="gs-num" id="go-correct">0</span>問正解</div>
+        <div class="gs-item"><span class="gs-num" id="go-streak">0</span>連続最大</div>
+      </div>
+      <div id="go-rank-result"></div>
+      <div id="go-buttons">
+        <button id="go-retry">🔄 もう一度（同じモード）</button>
+        <button id="go-mode-select">🏠 モード選択に戻る</button>
+        <button id="go-close-btn">✕ 終了</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1037,14 +1179,32 @@ const quizCategories = [
 
 const allPrefs = Object.keys(prefectureData);
 const TIMER_SEC = 15;
+const MAX_LIVES = 3;
 const qs = {
-  score: 0, total: 0, streak: 0,
-  highScore: parseInt(localStorage.getItem("jpMapHighScore") || "0"), // APIロード後に上書き
+  score: 0, total: 0, correct: 0, streak: 0, bestStreak: 0,
+  mode: "practice", lives: MAX_LIVES,
+  highScore: parseInt(localStorage.getItem("jpMapHighScore") || "0"),
   timer: null, timeLeft: TIMER_SEC, answered: false, autoTimer: null,
 };
 
 const randItem = arr => arr[Math.floor(Math.random() * arr.length)];
 
+// ----- 画面切り替え -----
+function showScreen(name) {
+  document.querySelectorAll(".quiz-screen").forEach(el => el.classList.remove("active"));
+  document.getElementById(`quiz-${name}-screen`).classList.add("active");
+}
+
+// ----- ライフ表示 -----
+function updateLives() {
+  const el = document.getElementById("quiz-lives");
+  if (qs.mode !== "ranking") { el.innerHTML = ""; return; }
+  el.innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
+    `<span class="life-icon${i >= qs.lives ? " lost" : ""}">❤️</span>`
+  ).join("");
+}
+
+// ----- 問題生成 -----
 function genTypeA() {
   const cat     = randItem(quizCategories);
   const correct = randItem(allPrefs);
@@ -1066,8 +1226,8 @@ function genTypeB() {
   const wrongs      = allPrefs.filter(p => p !== correct).sort(() => Math.random() - 0.5).slice(0, 3);
   const correctText = stripHtml(prefectureData[correct][cat.key] || "");
   const allChoices  = [
-    { pref: correct, text: correctText },
-    ...wrongs.map(p => ({ pref: p, text: stripHtml(prefectureData[p][cat.key] || "") })),
+    { text: correctText },
+    ...wrongs.map(p => ({ text: stripHtml(prefectureData[p][cat.key] || "") })),
   ].sort(() => Math.random() - 0.5);
   const trim = t => t.length > 48 ? t.slice(0, 48) + "…" : t;
   return {
@@ -1082,6 +1242,7 @@ function genTypeB() {
 
 function generateQuiz() { return Math.random() < 0.5 ? genTypeA() : genTypeB(); }
 
+// ----- タイマー -----
 function startTimer() {
   clearInterval(qs.timer);
   qs.timeLeft = TIMER_SEC;
@@ -1104,7 +1265,6 @@ function stopTimer() {
   clearInterval(qs.timer);
   const bar = document.getElementById("quiz-timer-bar");
   bar.style.transition = "none";
-  bar.style.width = bar.style.width; // freeze current width
 }
 
 function timeUp() {
@@ -1112,6 +1272,8 @@ function timeUp() {
   qs.total++;
   qs.streak = 0;
   updateStreakDisplay();
+  if (qs.mode === "ranking") { qs.lives--; updateLives(); }
+
   const choicesEl = document.getElementById("quiz-choices");
   choicesEl.querySelectorAll(".quiz-choice").forEach(b => {
     b.disabled = true;
@@ -1122,7 +1284,12 @@ function timeUp() {
   result.innerHTML = `⏱ 時間切れ！正解は「<strong>${correctBtn ? correctBtn.textContent : "？"}</strong>」でした`;
   result.className = "quiz-result show ng";
   updateScoreDisplay();
-  autoAdvance(2500);
+
+  if (qs.mode === "ranking" && qs.lives <= 0) {
+    setTimeout(() => gameOver(), 2200);
+  } else {
+    autoAdvance(2500);
+  }
 }
 
 function autoAdvance(ms) {
@@ -1135,6 +1302,7 @@ function autoAdvance(ms) {
   qs.autoTimer = setTimeout(() => { el.classList.remove("show"); renderQuiz(); }, ms);
 }
 
+// ----- 表示更新 -----
 function updateStreakDisplay() {
   const el = document.getElementById("quiz-streak-line");
   if      (qs.streak >= 10) el.textContent = `⚡ ${qs.streak}コンボ！！！`;
@@ -1158,6 +1326,31 @@ function showScorePop(text) {
   setTimeout(() => el.remove(), 1300);
 }
 
+// ----- ゲームオーバー -----
+async function gameOver() {
+  clearInterval(qs.timer);
+  clearTimeout(qs.autoTimer);
+  showScreen("gameover");
+
+  document.getElementById("go-score").textContent   = qs.score;
+  document.getElementById("go-correct").textContent = qs.correct;
+  document.getElementById("go-streak").textContent  = qs.bestStreak;
+
+  const rankEl = document.getElementById("go-rank-result");
+  rankEl.className = "";
+  rankEl.textContent = "ランキングに登録中…";
+
+  try {
+    await saveHighScore(qs.score);
+    rankEl.textContent = "✓ ランキングに登録されました";
+    rankEl.className = "ok";
+    loadRanking();
+  } catch {
+    rankEl.textContent = "（オフライン：ランキング登録できませんでした）";
+  }
+}
+
+// ----- メインゲームループ -----
 function renderQuiz() {
   clearTimeout(qs.autoTimer);
   document.getElementById("quiz-auto-next").classList.remove("show");
@@ -1196,14 +1389,20 @@ function renderQuiz() {
       });
       const result  = document.getElementById("quiz-result");
       const nextBtn = document.getElementById("quiz-next");
+
       if (q.isCorrect(choice)) {
         btn.classList.add("correct");
+        qs.correct++;
         qs.streak++;
+        if (qs.streak > qs.bestStreak) qs.bestStreak = qs.streak;
         const timeBonus   = Math.max(0, qs.timeLeft);
         const streakBonus = qs.streak >= 10 ? 10 : qs.streak >= 5 ? 5 : qs.streak >= 3 ? 3 : 0;
         const gained      = 10 + timeBonus + streakBonus;
         qs.score += gained;
-        if (qs.score > qs.highScore) { qs.highScore = qs.score; saveHighScore(qs.highScore); }
+        if (qs.score > qs.highScore) {
+          qs.highScore = qs.score;
+          localStorage.setItem("jpMapHighScore", qs.highScore);
+        }
         updateStreakDisplay();
         const bonusParts = [];
         if (timeBonus   > 0) bonusParts.push(`タイムボーナス +${timeBonus}`);
@@ -1212,15 +1411,26 @@ function renderQuiz() {
         result.innerHTML = `✓ 正解！ +${gained}pt${bonusLine}`;
         result.className = "quiz-result show ok";
         showScorePop(`+${gained}pt`);
+        updateScoreDisplay();
+        nextBtn.classList.add("show");
       } else {
         btn.classList.add("wrong");
         qs.streak = 0;
         updateStreakDisplay();
+        if (qs.mode === "ranking") {
+          qs.lives--;
+          updateLives();
+        }
         result.innerHTML = `✗ 不正解… 正解は「<strong>${q.correctLabel}</strong>」でした`;
         result.className = "quiz-result show ng";
+        updateScoreDisplay();
+
+        if (qs.mode === "ranking" && qs.lives <= 0) {
+          setTimeout(() => gameOver(), 1800);
+        } else {
+          nextBtn.classList.add("show");
+        }
       }
-      updateScoreDisplay();
-      nextBtn.classList.add("show");
     });
     choicesEl.appendChild(btn);
   });
@@ -1234,34 +1444,62 @@ function renderQuiz() {
 function resetQuiz() {
   clearInterval(qs.timer);
   clearTimeout(qs.autoTimer);
-  qs.score = 0; qs.total = 0; qs.streak = 0; qs.answered = false;
+  qs.score = 0; qs.total = 0; qs.correct = 0; qs.streak = 0; qs.bestStreak = 0;
+  qs.lives = MAX_LIVES; qs.answered = false;
   document.getElementById("quiz-streak-line").textContent = "";
   document.getElementById("quiz-auto-next").classList.remove("show");
   updateScoreDisplay();
+  updateLives();
 }
 
-document.getElementById("quiz-btn").addEventListener("click", () => {
+function startGame(mode) {
+  qs.mode = mode;
   resetQuiz();
-  document.getElementById("quiz-overlay").classList.add("active");
+  showScreen("game");
   renderQuiz();
-});
-document.getElementById("quiz-close").addEventListener("click", () => {
-  resetQuiz();
-  document.getElementById("quiz-overlay").classList.remove("active");
-});
-document.getElementById("quiz-next").addEventListener("click", () => {
-  clearTimeout(qs.autoTimer);
-  document.getElementById("quiz-auto-next").classList.remove("show");
-  renderQuiz();
-});
-document.getElementById("quiz-overlay").addEventListener("click", e => {
-  if (e.target === document.getElementById("quiz-overlay")) {
-    resetQuiz();
-    document.getElementById("quiz-overlay").classList.remove("active");
-  }
-});
+}
 
-// IPごとのハイスコアをAPIで管理（フォールバック: localStorage）
+function closeOverlay() {
+  clearInterval(qs.timer);
+  clearTimeout(qs.autoTimer);
+  document.getElementById("quiz-overlay").classList.remove("active");
+  showScreen("mode"); // 次回開いた時のためにモード選択に戻す
+}
+
+// ----- ランキング -----
+async function loadRanking() {
+  const listEl = document.getElementById("rank-body");
+  listEl.innerHTML = '<div id="rank-loading">読み込み中…</div>';
+  try {
+    const res = await fetch("/api/ranking");
+    if (!res.ok) throw new Error();
+    const { ranking } = await res.json();
+    renderRanking(ranking);
+  } catch {
+    listEl.innerHTML = '<div id="rank-empty">データなし</div>';
+  }
+}
+
+function renderRanking(ranking) {
+  const listEl = document.getElementById("rank-body");
+  if (!ranking || ranking.length === 0) {
+    listEl.innerHTML = '<div id="rank-empty">まだ記録がありません<br>クイズを始めよう！</div>';
+    return;
+  }
+  const medals = ["gold", "silver", "bronze"];
+  listEl.innerHTML = ranking.map((r, i) => `
+    <div class="rank-item">
+      <div class="rank-num ${medals[i] || ""}">${r.rank}</div>
+      <div class="rank-info">
+        <div class="rank-pref">${r.pref}</div>
+        <div class="rank-time">${r.time}</div>
+      </div>
+      <div class="rank-score">${r.score}pt</div>
+    </div>
+  `).join("");
+}
+
+// ----- API -----
 async function loadHighScore() {
   try {
     const res = await fetch("/api/score");
@@ -1277,17 +1515,53 @@ async function loadHighScore() {
 }
 
 async function saveHighScore(score) {
-  localStorage.setItem("jpMapHighScore", score);
-  try {
-    await fetch("/api/score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score }),
-    });
-  } catch { /* ignore */ }
+  localStorage.setItem("jpMapHighScore", Math.max(score, qs.highScore));
+  const res = await fetch("/api/score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ score }),
+  });
+  if (!res.ok) throw new Error("save failed");
 }
 
+// ----- イベントリスナー -----
+// クイズボタン → モード選択
+document.getElementById("quiz-btn").addEventListener("click", () => {
+  showScreen("mode");
+  document.getElementById("quiz-overlay").classList.add("active");
+});
+// モード選択
+document.getElementById("mode-ranking-btn").addEventListener("click", () => startGame("ranking"));
+document.getElementById("mode-practice-btn").addEventListener("click", () => startGame("practice"));
+// モード画面を閉じる
+document.getElementById("qms-close").addEventListener("click", () => {
+  document.getElementById("quiz-overlay").classList.remove("active");
+});
+// ゲーム中の✕
+document.getElementById("quiz-close").addEventListener("click", closeOverlay);
+// 次の問題
+document.getElementById("quiz-next").addEventListener("click", () => {
+  clearTimeout(qs.autoTimer);
+  document.getElementById("quiz-auto-next").classList.remove("show");
+  renderQuiz();
+});
+// ゲームオーバー画面
+document.getElementById("go-retry").addEventListener("click", () => startGame(qs.mode));
+document.getElementById("go-mode-select").addEventListener("click", () => showScreen("mode"));
+document.getElementById("go-close-btn").addEventListener("click", closeOverlay);
+// オーバーレイ背景クリック
+document.getElementById("quiz-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("quiz-overlay")) closeOverlay();
+});
+// ランキングパネル
+document.getElementById("rank-refresh").addEventListener("click", e => { e.stopPropagation(); loadRanking(); });
+document.getElementById("rank-header").addEventListener("click", () => {
+  document.getElementById("rank-panel").classList.toggle("collapsed");
+});
+
+// ----- 初期化 -----
 loadHighScore();
+loadRanking();
 init().catch(() => {
   document.getElementById("hint").textContent = "地図の読み込みに失敗しました。ネットワーク接続を確認してください。";
 });

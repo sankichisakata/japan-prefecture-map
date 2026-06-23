@@ -5,6 +5,31 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+async function getPrefecture(ip) {
+  if (!ip || ip === "::1" || ip.startsWith("127.") || ip.startsWith("192.168.") || ip.startsWith("10.")) {
+    return "不明（ローカル）";
+  }
+  try {
+    const r = await fetch(`http://ip-api.com/json/${ip}?lang=ja&fields=regionName`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!r.ok) return "不明";
+    const data = await r.json();
+    return data.regionName || "不明";
+  } catch {
+    return "不明";
+  }
+}
+
+function timestamp() {
+  const d = new Date();
+  const m   = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h   = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${m}/${day} ${h}:${min}`;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -12,11 +37,14 @@ export default async function handler(req, res) {
 
   const forwarded = req.headers["x-forwarded-for"] || "";
   const ip = (forwarded.split(",")[0] || req.socket?.remoteAddress || "unknown").trim();
-  const key = `hs:${ip}`;
 
   if (req.method === "GET") {
-    const val = await redis.get(key);
-    return res.json({ highScore: val ?? 0 });
+    try {
+      const val = await redis.get(`hs:${ip}`);
+      return res.json({ highScore: val ?? 0 });
+    } catch {
+      return res.json({ highScore: 0 });
+    }
   }
 
   if (req.method === "POST") {
@@ -25,11 +53,23 @@ export default async function handler(req, res) {
     if (!Number.isFinite(score) || score < 0) {
       return res.status(400).json({ error: "invalid score" });
     }
-    const current = (await redis.get(key)) ?? 0;
-    const best = Math.max(score, current);
-    // TTL: 24時間（最終アクセスから24h後に自動削除）
-    if (best > current) await redis.setex(key, 86400, best);
-    return res.json({ highScore: best });
+    try {
+      const current = (await redis.get(`hs:${ip}`)) ?? 0;
+      const best = Math.max(score, current);
+      const pref = await getPrefecture(ip);
+      const time = timestamp();
+
+      // 常に最新の都道府県と時刻で更新（スコアは最高値のみ）
+      await redis.setex(`hs:${ip}`, 86400, best);
+      await redis.zadd("ranking", { score: best, member: ip });
+      await redis.hset(`user:${ip}`, { pref, time, score: best });
+      await redis.expire(`user:${ip}`, 86400);
+
+      return res.json({ highScore: best });
+    } catch (e) {
+      console.error(e);
+      return res.json({ highScore: score });
+    }
   }
 
   res.status(405).end();
