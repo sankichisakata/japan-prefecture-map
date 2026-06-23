@@ -15,12 +15,14 @@ export default async function handler(req, res) {
 
     const ranking = [];
     for (const item of items) {
-      const user = await redis.hgetall(`user:${item.member}`);
+      const member = item.member ?? item;
+      const itemScore = item.score;
+      const user = await redis.hgetall(`user:${member}`);
       ranking.push({
         rank: ranking.length + 1,
         pref: user?.pref || "不明",
         time: user?.time || "--/-- --:--",
-        score: item.score,
+        score: itemScore ?? Number(user?.score) ?? 0,
       });
     }
     return res.json({ ranking });
