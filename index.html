@@ -400,40 +400,58 @@ rt { font-size: 0.6em; color: #8b949e; }
 #go-close-btn:hover { color:#f85149; }
 
 /* ===== ランキングパネル ===== */
-#rank-panel {
-  position:fixed; top:54px; right:12px; width:210px;
-  background:#161b22; border:1px solid #30363d; border-radius:10px;
-  z-index:50; box-shadow:0 4px 20px rgba(0,0,0,0.6);
+/* ランキングボタン */
+#rank-btn {
+  background: #1c2128; border: 1px solid #30363d; color: #ffd700;
+  border-radius: 6px; padding: 6px 14px; cursor: pointer;
+  font-size: 13px; font-weight: bold; transition: all 0.15s;
 }
-#rank-header {
-  display:flex; align-items:center; padding:10px 12px;
-  border-bottom:1px solid #21262d; cursor:pointer; user-select:none; gap:6px;
+#rank-btn:hover { background: #30363d; border-color: #ffd700; }
+.rank-btn-text { margin-left: 4px; }
+
+/* ランキングモーダル */
+#rank-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 90;
+  align-items: center; justify-content: center; padding: 16px;
 }
-#rank-title { font-size:13px; font-weight:bold; color:#ffd700; flex:1; }
-#rank-refresh {
-  background:none; border:none; color:#8b949e; cursor:pointer;
-  font-size:15px; padding:0 2px; line-height:1;
+#rank-overlay.active { display: flex; }
+#rank-modal {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  width: 100%; max-width: 400px; max-height: 80dvh;
+  display: flex; flex-direction: column; overflow: hidden;
 }
-#rank-refresh:hover { color:#e6edf3; }
-#rank-toggle { background:none; border:none; color:#8b949e; font-size:10px; cursor:pointer; transition:transform 0.2s; }
-#rank-body { max-height:300px; overflow-y:auto; }
-#rank-panel.collapsed #rank-body { display:none; }
-#rank-panel.collapsed #rank-toggle { transform:rotate(180deg); }
+#rank-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid #30363d; flex-shrink: 0;
+}
+#rank-modal-title { font-size: 15px; font-weight: bold; color: #ffd700; }
+#rank-modal-refresh {
+  background: none; border: none; color: #8b949e;
+  cursor: pointer; font-size: 16px; padding: 0 6px;
+}
+#rank-modal-refresh:hover { color: #e6edf3; }
+#rank-modal-close {
+  background: none; border: none; color: #8b949e;
+  cursor: pointer; font-size: 18px; padding: 0 2px;
+}
+#rank-modal-close:hover { color: #f85149; }
+#rank-body { overflow-y: auto; flex: 1; }
 .rank-item {
-  display:flex; align-items:center; padding:7px 12px; gap:8px;
+  display:flex; align-items:center; padding:10px 16px; gap:10px;
   border-bottom:1px solid #1c2128;
 }
 .rank-item:last-child { border-bottom:none; }
-.rank-num { color:#8b949e; width:18px; text-align:right; font-size:11px; flex-shrink:0; }
-.rank-num.gold   { color:#ffd700; font-weight:bold; }
+.rank-num { color:#8b949e; width:20px; text-align:right; font-size:12px; flex-shrink:0; }
+.rank-num.gold   { color:#ffd700; font-weight:bold; font-size:14px; }
 .rank-num.silver { color:#b0b8c4; font-weight:bold; }
 .rank-num.bronze { color:#cd7f32; font-weight:bold; }
 .rank-info { flex:1; min-width:0; }
-.rank-pref { color:#e6edf3; font-size:12px; font-weight:bold; }
-.rank-time { color:#484f58; font-size:10px; }
-.rank-score { color:#ffd700; font-weight:bold; font-size:13px; flex-shrink:0; }
-#rank-empty { text-align:center; color:#484f58; padding:16px 12px; font-size:12px; }
-#rank-loading { text-align:center; color:#484f58; padding:12px; font-size:12px; }
+.rank-pref { color:#e6edf3; font-size:13px; font-weight:bold; }
+.rank-time { color:#484f58; font-size:11px; margin-top:1px; }
+.rank-score { color:#ffd700; font-weight:bold; font-size:14px; flex-shrink:0; }
+#rank-empty { text-align:center; color:#484f58; padding:32px 16px; font-size:13px; line-height:1.8; }
+#rank-loading { text-align:center; color:#484f58; padding:24px; font-size:13px; }
 
 /* ===== ドラッグハンドル ===== */
 #panel-drag-handle { display: none; } /* デスクトップでは非表示 */
@@ -477,23 +495,21 @@ rt { font-size: 0.6em; color: #8b949e; }
   .legend { gap: 4px 10px; font-size: 10px; padding: 4px 8px; }
   h1 { font-size: 13px; padding: 8px; }
   #quiz-btn { font-size: 11px; padding: 5px 10px; }
+  #rank-btn { padding: 5px 8px; font-size: 14px; }
+  .rank-btn-text { display: none; } /* スマホはアイコンのみ */
   #quiz-choices { grid-template-columns: 1fr 1fr; gap: 8px; }
   .quiz-choice { font-size: 12px; padding: 10px 6px; }
   #quiz-box { padding: 14px; }
-  #rank-panel { width: 160px; top: 50px; right: 8px; }
-  #rank-panel.collapsed #rank-body { display: none; }
-  .rank-pref { font-size: 11px; }
-  .rank-score { font-size: 12px; }
 }
 @media (max-width: 400px) {
   .pref-label { font-size: 5.5px; }
-  #rank-panel { width: 140px; }
 }
 </style>
 </head>
 <body>
 <h1>
   <span>47都道府県 特色マップ</span>
+  <button id="rank-btn">🏆<span class="rank-btn-text">ランキング</span></button>
   <button id="quiz-btn">🎯 クイズ</button>
 </h1>
 <div id="main">
@@ -540,15 +556,17 @@ rt { font-size: 0.6em; color: #8b949e; }
 </div>
 <div class="legend" id="legend"></div>
 
-<!-- ランキングパネル（右上固定） -->
-<div id="rank-panel">
-  <div id="rank-header">
-    <span id="rank-title">🏆 ランキング</span>
-    <button id="rank-refresh" title="更新">↺</button>
-    <button id="rank-toggle">▲</button>
-  </div>
-  <div id="rank-body">
-    <div id="rank-loading">読み込み中…</div>
+<!-- ランキングモーダル -->
+<div id="rank-overlay">
+  <div id="rank-modal">
+    <div id="rank-modal-header">
+      <span id="rank-modal-title">🏆 スコアランキング</span>
+      <button id="rank-modal-refresh" title="更新">↺</button>
+      <button id="rank-modal-close">✕</button>
+    </div>
+    <div id="rank-body">
+      <div id="rank-loading">読み込み中…</div>
+    </div>
   </div>
 </div>
 
@@ -1601,14 +1619,23 @@ document.getElementById("quiz-overlay").addEventListener("click", e => {
   if (e.target === document.getElementById("quiz-overlay")) closeOverlay();
 });
 // ランキングパネル
-document.getElementById("rank-refresh").addEventListener("click", e => { e.stopPropagation(); loadRanking(); });
-document.getElementById("rank-header").addEventListener("click", () => {
-  document.getElementById("rank-panel").classList.toggle("collapsed");
+// ランキングモーダル
+document.getElementById("rank-btn").addEventListener("click", () => {
+  document.getElementById("rank-overlay").classList.add("active");
+  loadRanking();
+});
+document.getElementById("rank-modal-close").addEventListener("click", () => {
+  document.getElementById("rank-overlay").classList.remove("active");
+});
+document.getElementById("rank-modal-refresh").addEventListener("click", loadRanking);
+document.getElementById("rank-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("rank-overlay")) {
+    document.getElementById("rank-overlay").classList.remove("active");
+  }
 });
 
 // ----- 初期化 -----
 loadHighScore();
-loadRanking();
 init().catch(() => {
   document.getElementById("hint").textContent = "地図の読み込みに失敗しました。ネットワーク接続を確認してください。";
 });
