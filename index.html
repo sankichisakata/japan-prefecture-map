@@ -435,15 +435,40 @@ rt { font-size: 0.6em; color: #8b949e; }
 #rank-empty { text-align:center; color:#484f58; padding:16px 12px; font-size:12px; }
 #rank-loading { text-align:center; color:#484f58; padding:12px; font-size:12px; }
 
+/* ===== ドラッグハンドル ===== */
+#panel-drag-handle { display: none; } /* デスクトップでは非表示 */
+
 /* ===== モバイル対応 ===== */
 @media (max-width: 700px) {
   #main { flex-direction: column; }
   #panel {
     width: 100%;
     border-left: none;
-    border-top: 1px solid #30363d;
-    max-height: 45dvh;
+    border-top: none;
+    height: 45dvh;       /* max-height → height に変更してJSで制御 */
+    min-height: 52px;
+    overflow: hidden;
   }
+  #panel.dragging { transition: none; }
+  #panel-drag-handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 7px 0 3px;
+    cursor: grab;
+    touch-action: none;
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    flex-shrink: 0;
+  }
+  #panel-drag-handle:active { cursor: grabbing; }
+  .drag-bar {
+    width: 36px;
+    height: 4px;
+    background: #484f58;
+    border-radius: 2px;
+  }
+  #hint { display: none; }  /* スマホではヒントテキスト不要 */
   #panel-body { padding: 10px 12px; }
   #panel-header { padding: 10px 12px; }
   #pref-name { font-size: 18px; }
@@ -477,6 +502,7 @@ rt { font-size: 0.6em; color: #8b949e; }
     <svg id="map"></svg>
   </div>
   <div id="panel">
+    <div id="panel-drag-handle"><div class="drag-bar"></div></div>
     <div id="panel-header">
       <div id="pref-name">都道府県を選択</div>
       <div id="pref-region">地図をタップしてください</div>
@@ -1063,6 +1089,19 @@ const hint      = document.getElementById("hint");
 const infoCards = document.getElementById("info-cards");
 let selectedEl  = null;
 
+function resetPanel() {
+  if (selectedEl) {
+    const prevName = d3.select(selectedEl).datum().properties.nam_ja || d3.select(selectedEl).datum().properties.nam;
+    const prevReg  = prefectureData[prevName]?.region;
+    d3.select(selectedEl).style("fill", regionColors[prevReg] || "#1f6feb");
+    selectedEl = null;
+  }
+  prefName.textContent   = "都道府県を選択";
+  prefRegion.textContent = "地図をタップしてください";
+  hint.style.display     = "";
+  infoCards.style.display = "none";
+}
+
 function updatePanel(name, data) {
   prefName.textContent = name;
   prefRegion.textContent = `地域: ${data.region}`;
@@ -1124,9 +1163,10 @@ async function init() {
       }
     })
     .on("click", function(event, d) {
+      event.stopPropagation();
       const name = d.properties.nam_ja || d.properties.nam;
       if (selectedEl) {
-        const prevName = d3.select(selectedEl).datum().properties.nam_ja;
+        const prevName = d3.select(selectedEl).datum().properties.nam_ja || d3.select(selectedEl).datum().properties.nam;
         const prevReg  = prefectureData[prevName]?.region;
         d3.select(selectedEl).style("fill", regionColors[prevReg] || "#1f6feb");
       }
@@ -1154,6 +1194,13 @@ async function init() {
     .scaleExtent([0.5, 8])
     .on("zoom", event => g.attr("transform", event.transform));
   svg.call(zoom);
+
+  // 地図の空白（海）タップで選択解除
+  svg.on("click", function(event) {
+    if (event.target === this || event.target.tagName === "svg") {
+      resetPanel();
+    }
+  });
 }
 
 // ===== 凡例 =====
@@ -1565,6 +1612,60 @@ loadRanking();
 init().catch(() => {
   document.getElementById("hint").textContent = "地図の読み込みに失敗しました。ネットワーク接続を確認してください。";
 });
+
+// ----- パネルドラッグ（モバイルのみ） -----
+(function initPanelDrag() {
+  if (window.innerWidth > 700) return;
+
+  const panel  = document.getElementById("panel");
+  const handle = document.getElementById("panel-drag-handle");
+  const h1H    = document.querySelector("h1").offsetHeight;
+  const minH   = 52;                                    // ハンドル+ヘッダーのみ
+  const defH   = Math.round(window.innerHeight * 0.45); // デフォルト45%
+  const maxH   = window.innerHeight - h1H - 4;          // ほぼフル
+
+  // 初期高さを数値で設定
+  panel.style.height = defH + "px";
+
+  let startY = 0, startH = 0, isDragging = false;
+
+  function snapTo(targetH) {
+    panel.classList.remove("dragging");
+    panel.style.transition = "height 0.28s cubic-bezier(0.4,0,0.2,1)";
+    panel.style.height = targetH + "px";
+    setTimeout(() => { panel.style.transition = ""; }, 300);
+  }
+
+  handle.addEventListener("touchstart", e => {
+    isDragging = true;
+    startY = e.touches[0].clientY;
+    startH = panel.getBoundingClientRect().height;
+    panel.classList.add("dragging");
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener("touchmove", e => {
+    if (!isDragging) return;
+    const dy  = startY - e.touches[0].clientY; // 上方向が正
+    const newH = Math.max(minH, Math.min(startH + dy, maxH));
+    panel.style.height = newH + "px";
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const h = panel.getBoundingClientRect().height;
+    // スナップ閾値
+    if (h > (defH + maxH) / 2) {
+      snapTo(maxH);
+    } else if (h > (minH + defH) / 2) {
+      snapTo(defH);
+    } else {
+      snapTo(minH);
+    }
+  });
+})();
 </script>
 </body>
 </html>
