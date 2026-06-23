@@ -447,7 +447,9 @@ rt { font-size: 0.6em; color: #8b949e; }
 .rank-num.silver { color:#b0b8c4; font-weight:bold; }
 .rank-num.bronze { color:#cd7f32; font-weight:bold; }
 .rank-info { flex:1; min-width:0; }
-.rank-pref { color:#e6edf3; font-size:13px; font-weight:bold; }
+.rank-player { display:flex; align-items:baseline; gap:6px; }
+.rank-id { color:#58a6ff; font-size:11px; font-weight:bold; flex-shrink:0; }
+.rank-pref { color:#e6edf3; font-size:13px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rank-time { color:#484f58; font-size:11px; margin-top:1px; }
 .rank-score { color:#ffd700; font-weight:bold; font-size:14px; flex-shrink:0; }
 #rank-empty { text-align:center; color:#484f58; padding:32px 16px; font-size:13px; line-height:1.8; }
@@ -1556,7 +1558,10 @@ function renderRanking(ranking) {
     <div class="rank-item">
       <div class="rank-num ${medals[i] || ""}">${r.rank}</div>
       <div class="rank-info">
-        <div class="rank-pref">${r.pref}</div>
+        <div class="rank-player">
+          ${r.num != null ? `<span class="rank-id">#${r.num}</span>` : ""}
+          <span class="rank-pref">${r.location || "不明"}</span>
+        </div>
         <div class="rank-time">${r.time}</div>
       </div>
       <div class="rank-score">${r.score}pt</div>

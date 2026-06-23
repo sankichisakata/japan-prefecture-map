@@ -10,7 +10,6 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end();
 
   try {
-    // スコア降順でトップ20を取得
     const items = await redis.zrange("ranking", 0, 19, { rev: true, withScores: true });
 
     const ranking = [];
@@ -20,7 +19,8 @@ export default async function handler(req, res) {
       const user = await redis.hgetall(`user:${member}`);
       ranking.push({
         rank: ranking.length + 1,
-        pref: user?.pref || "不明",
+        num: Number(user?.num) || null,
+        location: user?.location || user?.pref || "不明",
         time: user?.time || "--/-- --:--",
         score: itemScore ?? Number(user?.score) ?? 0,
       });
