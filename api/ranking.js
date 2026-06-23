@@ -17,12 +17,14 @@ export default async function handler(req, res) {
       const member = item.member ?? item;
       const itemScore = item.score;
       const user = await redis.hgetall(`user:${member}`);
+      const score = itemScore ?? Number(user?.score) ?? null;
+      if (!user || score === null) continue; // TTL切れや古いデータはスキップ
       ranking.push({
         rank: ranking.length + 1,
-        num: Number(user?.num) || null,
-        location: user?.location || user?.pref || "不明",
-        time: user?.time || "--/-- --:--",
-        score: itemScore ?? Number(user?.score) ?? 0,
+        num: Number(user.num) || null,
+        location: user.location || user.pref || "不明",
+        time: user.time || "--/-- --:--",
+        score,
       });
     }
     return res.json({ ranking });
