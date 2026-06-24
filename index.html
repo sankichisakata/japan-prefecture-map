@@ -1168,6 +1168,7 @@ function resetPanel() {
   prefRegion.textContent = "地図をタップしてください";
   hint.style.display     = "";
   infoCards.style.display = "none";
+  window._panelSnap?.toMin();
 }
 
 function updatePanel(name, data) {
@@ -1181,6 +1182,7 @@ function updatePanel(name, data) {
   document.getElementById("info-companies").innerHTML  = data.companies || "データなし";
   hint.style.display     = "none";
   infoCards.style.display= "block";
+  window._panelSnap?.toDefault();
 }
 
 // ===== D3 地図描画 =====
@@ -1704,8 +1706,14 @@ init().catch(() => {
   const defH   = Math.round(window.innerHeight * 0.45); // デフォルト45%
   const maxH   = window.innerHeight - h1H - 4;          // ほぼフル
 
-  // 初期高さを数値で設定
-  panel.style.height = defH + "px";
+  // 未選択時は最小高さで起動
+  panel.style.height = minH + "px";
+
+  // updatePanel / resetPanel から呼べるよう外部に公開
+  window._panelSnap = {
+    toDefault: () => snapTo(defH),
+    toMin:     () => snapTo(minH),
+  };
 
   const header = document.getElementById("panel-header");
   let startY = 0, startH = 0, isDragging = false;
