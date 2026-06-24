@@ -1702,7 +1702,7 @@ init().catch(() => {
   const panel  = document.getElementById("panel");
   const handle = document.getElementById("panel-drag-handle");
   const h1H    = document.querySelector("h1").offsetHeight;
-  const minH   = 52;                                    // ハンドル+ヘッダーのみ
+  const minH   = handle.offsetHeight + document.getElementById("panel-header").offsetHeight; // ハンドル+ヘッダーのみ
   const defH   = Math.round(window.innerHeight * 0.45); // デフォルト45%
   const maxH   = window.innerHeight - h1H - 4;          // ほぼフル
 
