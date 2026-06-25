@@ -369,14 +369,17 @@ rt { font-size: 0.6em; color: #8b949e; }
   padding:16px; cursor:pointer; transition:all 0.15s; text-align:left; width:100%;
 }
 .mode-card:hover { border-color:#388bfd; background:#1a2233; }
+.practice-card { flex-direction:column; align-items:stretch; cursor:default; gap:0; }
+.practice-card:hover { border-color:#388bfd; background:#1a2233; }
+.mc-main { display:flex; align-items:center; gap:14px; cursor:pointer; }
 .mc-icon { font-size:28px; flex-shrink:0; }
 .mc-name { font-size:15px; font-weight:bold; color:#e6edf3; margin-bottom:4px; }
 .mc-desc { font-size:12px; color:#8b949e; line-height:1.5; }
 #qms-close { width:100%; background:none; border:1px solid #30363d; color:#8b949e; border-radius:8px; padding:8px; cursor:pointer; font-size:13px; }
 #qms-close:hover { border-color:#f85149; color:#f85149; }
 
-/* 出題範囲設定 */
-#qms-range { margin-bottom:12px; background:#161b22; border:1px solid #30363d; border-radius:10px; padding:10px 12px; }
+/* 出題範囲設定（練習モードカード内） */
+#qms-range { margin-top:10px; border-top:1px solid #30363d; padding-top:10px; }
 .qms-range-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .qms-range-title { font-size:12px; color:#8b949e; }
 #qms-range-count { font-size:12px; color:#58a6ff; font-weight:bold; }
@@ -609,25 +612,26 @@ rt { font-size: 0.6em; color: #8b949e; }
             <div class="mc-desc">ミス3回でゲームオーバー<br>スコアがランキングに登録される</div>
           </div>
         </button>
-        <button class="mode-card" id="mode-practice-btn">
-          <div class="mc-icon">📚</div>
-          <div>
-            <div class="mc-name">練習モード</div>
-            <div class="mc-desc">ミス無制限 / ランキング登録なし<br>気軽に都道府県を学ぼう</div>
+        <div class="mode-card practice-card" id="mode-practice-btn">
+          <div class="mc-main">
+            <div class="mc-icon">📚</div>
+            <div>
+              <div class="mc-name">練習モード</div>
+              <div class="mc-desc">ミス無制限 / ランキング登録なし<br>気軽に都道府県を学ぼう</div>
+            </div>
           </div>
-        </button>
-      </div>
-      <!-- 出題範囲設定（練習モード用） -->
-      <div id="qms-range">
-        <div class="qms-range-header">
-          <span class="qms-range-title">📍 練習モードの出題範囲</span>
-          <span id="qms-range-count">47都道府県</span>
+          <div id="qms-range">
+            <div class="qms-range-header">
+              <span class="qms-range-title">📍 出題範囲</span>
+              <span id="qms-range-count">47都道府県</span>
+            </div>
+            <label class="range-all-label">
+              <input type="checkbox" id="range-all-check"> すべて選択
+            </label>
+            <div id="range-region-btns"></div>
+            <div id="range-pref-panel"></div>
+          </div>
         </div>
-        <label class="range-all-label">
-          <input type="checkbox" id="range-all-check"> すべて選択
-        </label>
-        <div id="range-region-btns"></div>
-        <div id="range-pref-panel"></div>
       </div>
       <button id="qms-close">✕ 閉じる</button>
     </div>
@@ -1808,7 +1812,8 @@ document.getElementById("quiz-btn").addEventListener("click", () => {
 });
 // モード選択
 document.getElementById("mode-ranking-btn").addEventListener("click", () => startGame("ranking"));
-document.getElementById("mode-practice-btn").addEventListener("click", () => startGame("practice"));
+document.querySelector("#mode-practice-btn .mc-main").addEventListener("click", () => startGame("practice"));
+document.getElementById("qms-range").addEventListener("click", e => e.stopPropagation());
 // モード画面を閉じる
 document.getElementById("qms-close").addEventListener("click", () => {
   document.getElementById("quiz-overlay").classList.remove("active");
