@@ -601,18 +601,6 @@ rt { font-size: 0.6em; color: #8b949e; }
     <!-- ① モード選択画面 -->
     <div id="quiz-mode-screen" class="quiz-screen active">
       <div class="qms-title">47都道府県クイズ</div>
-      <!-- 出題範囲設定 -->
-      <div id="qms-range">
-        <div class="qms-range-header">
-          <span class="qms-range-title">📍 出題範囲</span>
-          <span id="qms-range-count">47都道府県</span>
-        </div>
-        <label class="range-all-label">
-          <input type="checkbox" id="range-all-check"> すべて選択
-        </label>
-        <div id="range-region-btns"></div>
-        <div id="range-pref-panel"></div>
-      </div>
       <div class="qms-cards">
         <button class="mode-card" id="mode-ranking-btn">
           <div class="mc-icon">🏆</div>
@@ -628,6 +616,18 @@ rt { font-size: 0.6em; color: #8b949e; }
             <div class="mc-desc">ミス無制限 / ランキング登録なし<br>気軽に都道府県を学ぼう</div>
           </div>
         </button>
+      </div>
+      <!-- 出題範囲設定（練習モード用） -->
+      <div id="qms-range">
+        <div class="qms-range-header">
+          <span class="qms-range-title">📍 練習モードの出題範囲</span>
+          <span id="qms-range-count">47都道府県</span>
+        </div>
+        <label class="range-all-label">
+          <input type="checkbox" id="range-all-check"> すべて選択
+        </label>
+        <div id="range-region-btns"></div>
+        <div id="range-pref-panel"></div>
       </div>
       <button id="qms-close">✕ 閉じる</button>
     </div>
@@ -1477,7 +1477,7 @@ function updateLives() {
 
 // ----- 問題生成 -----
 function genTypeA() {
-  const pool    = activePrefs.size >= 4 ? [...activePrefs] : allPrefs;
+  const pool    = (qs.mode === "practice" && activePrefs.size >= 4) ? [...activePrefs] : allPrefs;
   const cat     = randItem(quizCategories);
   const correct = randItem(pool);
   const wrongs  = allPrefs.filter(p => p !== correct).sort(() => Math.random() - 0.5).slice(0, 3);
@@ -1493,7 +1493,7 @@ function genTypeA() {
 }
 
 function genTypeB() {
-  const pool        = activePrefs.size >= 4 ? [...activePrefs] : allPrefs;
+  const pool        = (qs.mode === "practice" && activePrefs.size >= 4) ? [...activePrefs] : allPrefs;
   const cat         = randItem(quizCategories);
   const correct     = randItem(pool);
   const wrongs      = allPrefs.filter(p => p !== correct).sort(() => Math.random() - 0.5).slice(0, 3);
